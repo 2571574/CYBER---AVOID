@@ -1,66 +1,78 @@
-using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+[RequireComponent(typeof(RectTransform))]
 public class TouchInputController : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
 {
     public float HorizontalInput { get; private set; } // -1: 左, 1: 右, 0: 入力なし
-    public bool IsJumpHeld { get; private set; }       // ジャンプボタンを押し続けているか
+    public bool IsJumpHeld { get; private set; }       // ジャンプ判定
 
-    public event Action OnJumpStart;
-    public event Action OnJumpEnd;
+    [Header("Movement Settings (X Axis)")]
+    [Tooltip("パネルの左端から何割の幅を『左移動エリア』にするか")]
+    [SerializeField] private float leftMoveAreaRatio = 0.35f;
 
-    [Tooltip("画面の下から何割の高さをジャンプエリアの境界線にするか（例: 0.15 なら下から15%より上がジャンプ）")]
-    [SerializeField] private float jumpBorderHeightRatio = 0.15f;
+    [Tooltip("パネルの右端から何割の幅を『右移動エリア』にするか")]
+    [SerializeField] private float rightMoveAreaRatio = 0.35f;
 
-    private float screenHalfWidth;
-    private float jumpBorderY;
+    [Header("Jump Settings (Y Axis)")]
+    [Tooltip("パネルの上から何割を『ジャンプエリア』にするか（例: 0.5なら上半分がジャンプ）")]
+    [SerializeField] private float jumpAreaRatioInPanel = 0.5f;
 
-    private void Start()
+    private RectTransform rectTransform;
+
+    private void Awake()
     {
-        screenHalfWidth = Screen.width / 2f;
-        jumpBorderY = Screen.height * jumpBorderHeightRatio;
+        rectTransform = GetComponent<RectTransform>();
     }
 
-    public void OnPointerDown(PointerEventData eventData)
+    public void OnPointerDown(PointerEventData eventData) => ProcessInput(eventData);
+
+    public void OnDrag(PointerEventData eventData) => ProcessInput(eventData);
+
+    public void OnPointerUp(PointerEventData eventData) => ResetInput();
+
+    private void OnDisable()
     {
-        ProcessInput(eventData.position);
+        ResetInput();
     }
 
-    public void OnDrag(PointerEventData eventData)
+    private void ResetInput()
     {
-        ProcessInput(eventData.position);
-    }
-
-    public void OnPointerUp(PointerEventData eventData)
-    {
-        // 指を離したらすべてリセット
         HorizontalInput = 0f;
-        if (IsJumpHeld)
-        {
-            IsJumpHeld = false;
-            OnJumpEnd?.Invoke();
-        }
+        IsJumpHeld = false;
     }
 
-    private void ProcessInput(Vector2 pointerPosition)
+    private void ProcessInput(PointerEventData eventData)
     {
-        // 1. X座標で左右移動を判定
-        HorizontalInput = pointerPosition.x < screenHalfWidth ? -1f : 1f;
-
-        // 2. Y座標でジャンプ領域にいるかを判定
-        bool isPointerInJumpArea = pointerPosition.y > jumpBorderY;
-
-        // 状態が変化した瞬間のみイベントを発火
-        if (isPointerInJumpArea && !IsJumpHeld)
+        // タップされたスクリーン座標を、このUIパネル内のローカル座標に変換する（カメラ設定やCanvasサイズに依存しない）
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            rectTransform,
+            eventData.position,
+            eventData.pressEventCamera,
+            out Vector2 localPoint))
         {
-            IsJumpHeld = true;
-            OnJumpStart?.Invoke();
-        }
-        else if (!isPointerInJumpArea && IsJumpHeld)
-        {
-            IsJumpHeld = false;
-            OnJumpEnd?.Invoke();
+            Rect rect = rectTransform.rect;
+
+            // XとYを、パネルの左下を 0.0、右上を 1.0 とした「割合（正規化座標）」に変換
+            float normalizedX = (localPoint.x - rect.x) / rect.width;
+            float normalizedY = (localPoint.y - rect.y) / rect.height;
+
+            // X軸の判定（0.0 〜 1.0）
+            if (normalizedX < leftMoveAreaRatio)
+            {
+                HorizontalInput = -1f;
+            }
+            else if (normalizedX > (1.0f - rightMoveAreaRatio))
+            {
+                HorizontalInput = 1f;
+            }
+            else
+            {
+                HorizontalInput = 0f; // 中央エリア
+            }
+
+            // Y軸の判定：下端が0.0、上端が1.0なので、上部判定は (1.0 - jumpAreaRatioInPanel) より上
+            IsJumpHeld = normalizedY > (1.0f - jumpAreaRatioInPanel);
         }
     }
 }

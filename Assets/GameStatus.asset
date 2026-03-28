@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95287ae1536258341a48bb77b908e1cc, type: 3}
+  m_Name: GameStatus
+  m_EditorClassIdentifier: 
+  maxHealth: 3
+  invincibilityDuration: 1.5
+  playerMoveSpeed: 5
+  jumpForce: 6
+  groundAcceleration: 20
+  groundDeceleration: 20
+  airAcceleration: 10
+  airDeceleration: 5
+  scrollSpeed: 4
+  baseBulletFallSpeed: 15
+  maxObstacleSpawnInterval: 3
+  WindowXRange: {x: -2.8, y: 2.8}
+  difficultyIncreaseRate: 0.1
+  difficultyIncreaseInterval: 10
+  ScrollSpeedWeight: 1
+  maxScrollSpeed: 15
+  baseObstacleSpawnInterval: 2.5
+  obstacleIntervalWeight: 1
+  minObstacleSpawnInterval: 1.5
+  bulletSpeedWeight: 0
+  maxBulletFallSpeed: 25
+  baseBulletWarningTime: 1
+  bulletWarningTimeWeight: 1
+  minBulletWarningTime: 0.4
+  baseBulletSpawnInterval: 3
+  bulletIntervalWeight: 1
+  minBulletSpawnInterval: 0.8
+  scorePerSecond: 10
+  dodgeBonusScore: 50

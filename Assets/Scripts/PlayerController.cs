@@ -6,82 +6,94 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private GameStatus settings;
     [SerializeField] private TouchInputController inputController;
 
+    [Header("Ground Check")]
+    [SerializeField] private Transform groundCheck;     // プレイヤーの足元に配置する空オブジェクト
+    [SerializeField] private float groundCheckRadius = 0.1f; // 判定の広さ
+    [SerializeField] private LayerMask groundLayer;     // 地面として扱うレイヤー
+
     private Rigidbody2D rb;
     private bool isGrounded;
-    private bool jumpRequest; // ジャンプ開始のフラグ
-    private bool cutJumpRequest; // ジャンプを途中で切るフラグ
+    private Vector2 startPosition;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
+        startPosition = transform.position;
     }
 
-    private void OnEnable()
+    private void Start()
     {
-        // イベントに登録
-        inputController.OnJumpStart += HandleJumpStart;
-        inputController.OnJumpEnd += HandleJumpEnd;
-    }
-
-    private void OnDisable()
-    {
-        // イベントから解除（メモリリーク防止）
-        inputController.OnJumpStart -= HandleJumpStart;
-        inputController.OnJumpEnd -= HandleJumpEnd;
-    }
-
-    private void HandleJumpStart()
-    {
-        jumpRequest = true; // FixedUpdateで処理する
-    }
-
-    private void HandleJumpEnd()
-    {
-        // ジャンプ中に指を離した場合
-        if (!isGrounded && rb.velocity.y > 0)
+        if (GameManager.Instance != null)
         {
-            cutJumpRequest = true;
+            GameManager.Instance.OnStateChanged += HandleStateChanged;
         }
     }
 
-    // 物理演算に関わる処理はFixedUpdateで行う
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged -= HandleStateChanged;
+        }
+    }
+
+    private void HandleStateChanged(GameState state)
+    {
+        if (state == GameState.Title || state == GameState.Playing)
+        {
+            transform.position = startPosition;
+            rb.velocity = Vector2.zero;
+        }
+    }
+
+
     private void FixedUpdate()
     {
-        // 1. 左右移動の制御（アーケードライク：速度を直接上書き）
+        // プレイ中以外は操作を受け付けない（GameManager制御）
+        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing)
+        {
+            rb.velocity = Vector2.zero; // 停止時は物理挙動も止める
+            return;
+        }
+
+        //接地判定
+        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
         float targetVelocityX = inputController.HorizontalInput * settings.playerMoveSpeed;
-        rb.velocity = new Vector2(targetVelocityX, rb.velocity.y);
+        float currentVelocityX = rb.velocity.x;
 
-        // 2. ジャンプの処理
-        if (jumpRequest && isGrounded)
+        float currentAccel = isGrounded ? settings.groundAcceleration : settings.airAcceleration;
+        float currentDecel = isGrounded ? settings.groundDeceleration : settings.airDeceleration;
+
+        float accelRate = (Mathf.Abs(inputController.HorizontalInput) > 0.01f) ? currentAccel : currentDecel;
+
+        float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, accelRate * Time.fixedDeltaTime);
+
+        rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+
+        Vector2 screenRange = GameManager.Instance.GetDynamicScreenRange();
+        float clampedX = Mathf.Clamp(rb.position.x, screenRange.x, screenRange.y);
+
+        if (rb.position.x != clampedX)
         {
-            // 上向きの瞬時速度（力ではなく、速度を直接与える）
+            rb.position = new Vector2(clampedX, rb.position.y);
+            rb.velocity = new Vector2(0f, rb.velocity.y);
+        }
+
+        //ジャンプの処理
+        if (inputController.IsJumpHeld && isGrounded)
+        {
             rb.velocity = new Vector2(rb.velocity.x, settings.jumpForce);
-            jumpRequest = false;
-        }
-
-        // 3. 可変ジャンプの処理（これが手触りの良さを生む）
-        if (cutJumpRequest)
-        {
-            // 上向きの速度を半分にする（またはsettingsに追加しても良い）
-            rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
-            cutJumpRequest = false;
         }
     }
 
-    // 地面接地判定（簡易的な実装）
-    private void OnCollisionStay2D(Collision2D collision)
+    // 開発時にUnityエディタ上で判定範囲を視覚化するための機能
+    private void OnDrawGizmosSelected()
     {
-        if (collision.gameObject.CompareTag("Ground"))
+        if (groundCheck != null)
         {
-            isGrounded = true;
-        }
-    }
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        if (collision.gameObject.CompareTag("Ground"))
-        {
-            isGrounded = false;
+            Gizmos.color = Color.green;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
     }
 }

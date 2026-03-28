@@ -4,16 +4,23 @@ public class ScrollingObject : MonoBehaviour
 {
     private GameStatus settings;
 
-    public void SetSettings(GameStatus gs) => settings = gs;
+    public void SetSettings(GameStatus gs)
+    {
+        settings = gs;
+    }
 
     void Update()
     {
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing) return;
         if (settings == null) return;
 
-        // 設定データに基づき左へ移動
-        transform.Translate(Vector3.left * settings.scrollSpeed * Time.deltaTime);
+        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
 
-        // 画面外（例：X=-15）に出たら削除してメモリを節約
+        float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
+        float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
+
+        transform.Translate(Vector3.left * currentSpeed * Time.deltaTime);
+
         if (transform.position.x < -15f)
         {
             Destroy(gameObject);
