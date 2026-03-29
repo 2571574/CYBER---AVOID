@@ -109,7 +109,7 @@ public class UIManager : MonoBehaviour
         if (RankingManager.Instance == null) return;
 
         var highScores = RankingManager.Instance.CurrentRanking.highScores;
-        string rankingString = "=== TOP 5 ===\n";
+        string rankingString = "";
 
         if (highScores.Count == 0)
         {
