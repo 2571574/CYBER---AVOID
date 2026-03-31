@@ -14,7 +14,7 @@ public class RankingManager : MonoBehaviour
     public static RankingManager Instance { get; private set; }
 
     private const string RANKING_KEY = "LocalRankingData";
-    private const int MAX_RANKING_COUNT = 5; // 上位何名まで保存するか
+    private const int MAX_RANKING_COUNT = 30; // 上位何名まで保存するか
 
     public RankingData CurrentRanking { get; private set; }
 
@@ -40,27 +40,40 @@ public class RankingManager : MonoBehaviour
         }
     }
 
-    // ゲームオーバー時にスコアを送信し、ランクインしていれば保存する
-    public void AddScoreAndSave(int newScore)
+    // ゲームオーバー時にスコアを保存し、ランクインしていればインデックスで返す
+    public int AddScoreAndSave(int newScore)
     {
-        if (newScore <= 0) return;
+        if (newScore <= 0) return -1;
 
-        CurrentRanking.highScores.Add(newScore);
+        int rankIndex = -1;
 
-        // スコアを降順（大きい順）に並び替える
-        CurrentRanking.highScores.Sort((a, b) => b.CompareTo(a));
-
-        // MAX_RANKING_COUNT（5件）を超えたら、下位のスコアを削除する
-        if (CurrentRanking.highScores.Count > MAX_RANKING_COUNT)
+        for (int i = 0; i < CurrentRanking.highScores.Count; i++)
         {
-            CurrentRanking.highScores.RemoveRange(MAX_RANKING_COUNT, CurrentRanking.highScores.Count - MAX_RANKING_COUNT);
+            if (newScore > CurrentRanking.highScores[i])
+            {
+                rankIndex = i;
+                break;
+            }
         }
 
-        // 最新のランキングデータをJSONテキストに変換して保存
+        if (rankIndex == -1 && CurrentRanking.highScores.Count < MAX_RANKING_COUNT)
+        {
+            rankIndex = CurrentRanking.highScores.Count;
+        }
+
+        if (rankIndex == -1) return -1;
+
+        CurrentRanking.highScores.Insert(rankIndex, newScore);
+
+        if (CurrentRanking.highScores.Count > MAX_RANKING_COUNT)
+        {
+            CurrentRanking.highScores.RemoveAt(CurrentRanking.highScores.Count - 1);
+        }
+
         string json = JsonUtility.ToJson(CurrentRanking);
         PlayerPrefs.SetString(RANKING_KEY, json);
         PlayerPrefs.Save();
 
-        Debug.Log("ランキングを保存しました: " + json);
+        return rankIndex;
     }
 }

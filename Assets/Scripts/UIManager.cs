@@ -18,8 +18,10 @@ public class UIManager : MonoBehaviour
     [Header("GameOver Elements")]
     [SerializeField] private TextMeshProUGUI resultScoreText;
 
-    [SerializeField] private TextMeshProUGUI titleRankingText;
-    [SerializeField] private TextMeshProUGUI gameOverRankingText;
+    [Header("Ranking Elements")]
+    [SerializeField] private Transform titleRankingContent; //タイトルのランキング
+    [SerializeField] private GameObject rankingTextPrefab;  // １順位ずつ表示するためのプレハブ
+    [SerializeField] private TextMeshProUGUI[] gameOverRankingTexts;
 
     [Header("References")]
     [SerializeField] private PlayerHealth playerHealth;
@@ -59,12 +61,10 @@ public class UIManager : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
-        // 状態に合わせてパネルの表示/非表示を切り替える
         titlePanel.SetActive(state == GameState.Title);
         hudPanel.SetActive(state == GameState.Playing);
         gameOverPanel.SetActive(state == GameState.GameOver);
 
-        // 追加: プレイ中のみ、操作用の透明パネルをオンにする
         if (touchInputPanel != null)
         {
             touchInputPanel.SetActive(state == GameState.Playing);
@@ -77,10 +77,11 @@ public class UIManager : MonoBehaviour
 
             if (RankingManager.Instance != null)
             {
+                // ここで保存処理を走らせる
                 RankingManager.Instance.AddScoreAndSave(finalScore);
             }
 
-            UpdateRankingUITexts();
+            UpdateGameOverRankingUI();
         }
     }
 
@@ -104,29 +105,51 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void UpdateRankingUITexts()
+    private void UpdateTitleRankingUI()
     {
-        if (RankingManager.Instance == null) return;
+        if (RankingManager.Instance == null || titleRankingContent == null || rankingTextPrefab == null) return;
+
+        // 既存のリストをクリア（重複生成を防ぐため）
+        foreach (Transform child in titleRankingContent)
+        {
+            Destroy(child.gameObject);
+        }
 
         var highScores = RankingManager.Instance.CurrentRanking.highScores;
-        string rankingString = "";
 
         if (highScores.Count == 0)
         {
-            rankingString += "NO RECORD";
-        }
-        else
-        {
-            for (int i = 0; i < highScores.Count; i++)
-            {
-                // 例： "1. 1500" のように改行して追加していく
-                rankingString += $"{i + 1}. {highScores[i]}\n";
-            }
+            GameObject obj = Instantiate(rankingTextPrefab, titleRankingContent);
+            obj.GetComponent<TextMeshProUGUI>().text = "NO RECORD";
+            return;
         }
 
-        // 両方のテキストコンポーネントに同じ文字列をセット
-        if (titleRankingText != null) titleRankingText.text = rankingString;
-        if (gameOverRankingText != null) gameOverRankingText.text = rankingString;
+        // 30件すべて生成
+        for (int i = 0; i < highScores.Count; i++)
+        {
+            GameObject obj = Instantiate(rankingTextPrefab, titleRankingContent);
+            obj.GetComponent<TextMeshProUGUI>().text = $"{i + 1}. {highScores[i]}";
+        }
+    }
+
+    private void UpdateGameOverRankingUI()
+    {
+        if (RankingManager.Instance == null || gameOverRankingTexts == null || gameOverRankingTexts.Length == 0) return;
+
+        var highScores = RankingManager.Instance.CurrentRanking.highScores;
+
+        for (int i = 0; i < gameOverRankingTexts.Length; i++)
+        {
+            if (i < highScores.Count)
+            {
+                gameOverRankingTexts[i].text = $"{i + 1}. {highScores[i]}";
+                gameOverRankingTexts[i].gameObject.SetActive(true);
+            }
+            else
+            {
+                gameOverRankingTexts[i].gameObject.SetActive(false);
+            }
+        }
     }
 
     // --- ボタンメソッド ---
@@ -147,7 +170,7 @@ public class UIManager : MonoBehaviour
     }
     public void OnClickOpenRankingButton()
     {
-        UpdateRankingUITexts();
+        UpdateTitleRankingUI();
         if (rankingPanel != null) rankingPanel.SetActive(true);
     }
 
@@ -156,4 +179,3 @@ public class UIManager : MonoBehaviour
         if (rankingPanel != null) rankingPanel.SetActive(false);
     }
 }
-
