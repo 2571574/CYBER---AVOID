@@ -125,6 +125,12 @@ public class BulletSpawner : MonoBehaviour
             lr.SetPosition(1, targetPos);
         }
 
+        PredictLineEffect warningEffect = preLineObj.GetComponent<PredictLineEffect>();
+        if (warningEffect != null)
+        {
+            warningEffect.StartCharge(currentWarningTime);
+        }
+
         yield return new WaitForSeconds(currentWarningTime);
 
         // 待機中にゲームオーバーやタイトルに戻っていた場合の安全対策

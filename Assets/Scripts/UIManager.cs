@@ -13,7 +13,9 @@ public class UIManager : MonoBehaviour
 
     [Header("HUD Elements")]
     [SerializeField] private TextMeshProUGUI scoreText;
-    [SerializeField] private TextMeshProUGUI healthText;
+    [SerializeField] private Image[] heartImages;
+    [SerializeField] private Sprite fullHeartSprite;
+    [SerializeField] private Sprite emptyHeartSprite;
 
     [Header("GameOver Elements")]
     [SerializeField] private TextMeshProUGUI resultScoreText;
@@ -99,9 +101,19 @@ public class UIManager : MonoBehaviour
 
     private void UpdateHealthUI(int currentHealth)
     {
-        if (healthText != null)
+        if (heartImages == null || heartImages.Length == 0) return;
+
+        for (int i = 0; i < heartImages.Length; i++)
         {
-            healthText.text = "LIFE: " + currentHealth.ToString();
+            // 現在の体力よりインデックスが小さければ満タン、それ以上なら空の画像にする
+            if (i < currentHealth)
+            {
+                heartImages[i].sprite = fullHeartSprite;
+            }
+            else
+            {
+                heartImages[i].sprite = emptyHeartSprite;
+            }
         }
     }
 
