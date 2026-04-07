@@ -7,6 +7,8 @@ public class EffectManager : MonoBehaviour
     [Header("Effect Prefabs")]
     [Tooltip("被弾時に再生するパーティクルプレハブを紐付けてください")]
     [SerializeField] private GameObject damageEffectPrefab;
+    [Tooltip("死亡時に再生するパーティクルプレハブを紐付けてください")]
+    [SerializeField] private GameObject deathEffectPrefab; // 追加
     [Tooltip("ボーナス獲得時に再生するパーティクルプレハブを紐付けてください")]
     [SerializeField] private GameObject scoreEffectPrefab;
 
@@ -16,25 +18,23 @@ public class EffectManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // === エフェクトの再生処理 ===
-    // 指定された位置にプレハブを生成（Instantiate）します
     public void PlayEffect(GameObject prefab, Vector3 position)
     {
         if (prefab == null) return;
-
-        // 生成と同時に、Quaternion.identity（回転なし）で配置
         Instantiate(prefab, position, Quaternion.identity);
     }
 
-    // === 外部から呼び出すためのショートカット関数 ===
-
-    // プレイヤーが被弾した場所で呼び出します
     public void PlayDamageEffect(Vector3 position)
     {
         PlayEffect(damageEffectPrefab, position);
     }
 
-    // ボーナスを獲得した場所で呼び出します
+    // 死亡時用のショートカット関数を追加
+    public void PlayDeathEffect(Vector3 position)
+    {
+        PlayEffect(deathEffectPrefab, position);
+    }
+
     public void PlayScoreEffect(Vector3 position)
     {
         PlayEffect(scoreEffectPrefab, position);
