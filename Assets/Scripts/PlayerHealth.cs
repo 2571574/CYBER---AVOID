@@ -18,14 +18,24 @@ public class PlayerHealth : MonoBehaviour
     // シェーダーのプロパティIDをキャッシュ
     private readonly int damageRatioPropertyId = Shader.PropertyToID("_DamageRatio");
     private readonly int glitchIntensityPropertyId = Shader.PropertyToID("_GlitchIntensify");
+    private readonly int edgeColorPropertyId = Shader.PropertyToID("_EdgeColor");
+
+    private Color originalEdgeColor;
+    private Coroutine hitEffectCoroutine;
 
     private void Start()
     {
         if (settings != null) CurrentHealth = settings.maxHealth;
         if (GameManager.Instance != null) GameManager.Instance.OnStateChanged += HandleStateChanged;
 
+        // 初期化時にマテリアルの本来のネオンカラー（HDR）を保存
+        if (spriteRenderer != null && spriteRenderer.material != null)
+        {
+            originalEdgeColor = spriteRenderer.material.GetColor(edgeColorPropertyId);
+        }
+
         UpdateShaderDamageRatio();
-        SetGlitchIntensity(0f); // 初期化時に歪みをゼロに
+        SetGlitchIntensity(0f);
     }
 
     private void OnDestroy()
@@ -40,7 +50,16 @@ public class PlayerHealth : MonoBehaviour
             if (settings != null) CurrentHealth = settings.maxHealth;
             isInvincible = false;
 
-            if (spriteRenderer != null) spriteRenderer.enabled = true;
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.enabled = true;
+                spriteRenderer.color = Color.white; // 透過や色を完全にリセット
+
+                if (spriteRenderer.material != null)
+                {
+                    spriteRenderer.material.SetColor(edgeColorPropertyId, originalEdgeColor);
+                }
+            }
             gameObject.SetActive(true);
 
             UpdateShaderDamageRatio();
@@ -65,7 +84,6 @@ public class PlayerHealth : MonoBehaviour
         CurrentHealth--;
         OnHealthChanged?.Invoke(CurrentHealth);
 
-        // 穴の空き具合を更新
         UpdateShaderDamageRatio();
 
         if (CurrentHealth <= 0)
@@ -77,8 +95,10 @@ public class PlayerHealth : MonoBehaviour
         }
         else
         {
-            // ヒットエフェクト（歪みの減衰）と無敵点滅を並行して実行
-            StartCoroutine(HitGlitchRoutine());
+            // 既存のエフェクトが実行中なら停止して上書き
+            if (hitEffectCoroutine != null) StopCoroutine(hitEffectCoroutine);
+
+            hitEffectCoroutine = StartCoroutine(HitEffectRoutine());
             StartCoroutine(InvincibilityRoutine());
         }
     }
@@ -100,42 +120,77 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    // ダメージを受けた瞬間に激しく歪み、徐々に静止するヒットエフェクト
-    private IEnumerator HitGlitchRoutine()
+    // 発光バーストとグリッチを統合したヒットエフェクト
+    private IEnumerator HitEffectRoutine()
     {
-        float duration = 0.3f; // 歪みが収まるまでの時間（秒）
+        float duration = 0.3f;
         float elapsed = 0f;
 
-        while (elapsed < duration)
+        // HDR環境では4倍程度だと「少し白い」程度にしかならないため、極端に引き上げる（15倍〜20倍）
+        float burstMultiplier = 15.0f;
+        Color burstColor = originalEdgeColor * burstMultiplier;
+        burstColor.a = originalEdgeColor.a; // アルファ値は元のまま維持
+
+        // 1. バーストの最大発光を適用
+        if (spriteRenderer != null && spriteRenderer.material != null)
+        {
+            spriteRenderer.material.SetColor(edgeColorPropertyId, burstColor);
+        }
+
+        // 2. 最大発光の状態を0.05秒間だけ「ホールド」する（これがないと一瞬すぎて見えない）
+        yield return new WaitForSeconds(0.05f);
+
+        // 3. 残りの時間で元の色へ減衰
+        float fadeDuration = duration - 0.05f;
+
+        while (elapsed < fadeDuration)
         {
             elapsed += Time.deltaTime;
-            // 1.0 から 0.0 へ向かって滑らかに減衰（SmoothStep的な補間）
-            float t = elapsed / duration;
-            float currentIntensity = Mathf.Lerp(1f, 0f, t * t); // 2乗することで後半スッと収まる
+            float t = elapsed / fadeDuration;
 
+            // グリッチの減衰（2乗で後半にかけてスッと収束）
+            float currentIntensity = Mathf.Lerp(1f, 0f, t * t);
             SetGlitchIntensity(currentIntensity);
+
+            // 発光バーストの減衰
+            // EaseOut（最初は早く暗くなり、後からゆっくり元に戻る）をかけて余韻を残す
+            float easeT = 1f - Mathf.Pow(1f - t, 3f);
+
+            if (spriteRenderer != null && spriteRenderer.material != null)
+            {
+                Color lerpedColor = Color.Lerp(burstColor, originalEdgeColor, easeT);
+                spriteRenderer.material.SetColor(edgeColorPropertyId, lerpedColor);
+            }
+
             yield return null;
         }
 
-        SetGlitchIntensity(0f); // 最後に確実にゼロにする
+        // 終了時の確実なリセット
+        SetGlitchIntensity(0f);
+        if (spriteRenderer != null && spriteRenderer.material != null)
+        {
+            spriteRenderer.material.SetColor(edgeColorPropertyId, originalEdgeColor);
+        }
     }
 
+    // 無敵状態の制御（アルファ値のみを操作）
     private IEnumerator InvincibilityRoutine()
     {
-        // ダメージを受けた瞬間から当たり判定は無敵にする
         isInvincible = true;
 
-        // 無敵状態の視覚表現：全体を暗くし(RGB:0.3)、半透明(Alpha:0.5)にする
+        // 発光バーストが最も強い瞬間（0.1秒間）は不透明度1.0を維持し、光を阻害しない
+        yield return new WaitForSeconds(0.1f);
+
         if (spriteRenderer != null)
         {
-            // Color(Red, Green, Blue, Alpha)
-            spriteRenderer.color = new Color(0.8f, 0.8f, 0.8f, 0.8f);
+            spriteRenderer.color = new Color(0.8f, 0.8f, 0.8f, 1.0f);
         }
 
-        // 無敵時間全体を待機する
-        yield return new WaitForSeconds(settings.invincibilityDuration);
+        // 残りの無敵時間を待機
+        float remainingTime = Mathf.Max(0f, settings.invincibilityDuration - 0.1f);
+        yield return new WaitForSeconds(remainingTime);
 
-        // 無敵時間終了：元の「真っ白で不透明」な状態に戻す
+        // 無敵終了時に元の状態へ戻す
         if (spriteRenderer != null)
         {
             spriteRenderer.color = Color.white;
