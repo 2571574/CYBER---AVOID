@@ -2811,7 +2811,7 @@
     "m_ShaderOutputName": "Edge",
     "m_StageCapability": 3,
     "m_Value": {
-        "x": 0.4099999964237213,
+        "x": 0.3100000023841858,
         "y": 1.0,
         "z": 1.0,
         "w": 1.0
@@ -5002,7 +5002,7 @@
     "m_ShaderOutputName": "A",
     "m_StageCapability": 3,
     "m_Value": {
-        "x": 0.4000000059604645,
+        "x": 0.30000001192092898,
         "y": 1.0,
         "z": 1.0,
         "w": 1.0
