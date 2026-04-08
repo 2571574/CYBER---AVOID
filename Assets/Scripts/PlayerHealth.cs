@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -129,7 +129,7 @@ public class PlayerHealth : MonoBehaviour
         if (spriteRenderer != null)
         {
             // Color(Red, Green, Blue, Alpha)
-            spriteRenderer.color = new Color(0.6f, 0.6f, 0.6f, 0.5f);
+            spriteRenderer.color = new Color(0.8f, 0.8f, 0.8f, 0.8f);
         }
 
         // 無敵時間全体を待機する
