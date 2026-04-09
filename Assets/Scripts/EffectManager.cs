@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class EffectManager : MonoBehaviour
 {
@@ -8,7 +8,7 @@ public class EffectManager : MonoBehaviour
     [Tooltip("被弾時に再生するパーティクルプレハブを紐付けてください")]
     [SerializeField] private GameObject damageEffectPrefab;
     [Tooltip("死亡時に再生するパーティクルプレハブを紐付けてください")]
-    [SerializeField] private GameObject deathEffectPrefab; // 追加
+    [SerializeField] private GameObject deathEffectPrefab;
     [Tooltip("ボーナス獲得時に再生するパーティクルプレハブを紐付けてください")]
     [SerializeField] private GameObject scoreEffectPrefab;
 

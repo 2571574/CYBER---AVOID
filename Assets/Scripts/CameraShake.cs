@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections;
 
 public class CameraShake : MonoBehaviour
@@ -6,6 +6,7 @@ public class CameraShake : MonoBehaviour
     public static CameraShake Instance { get; private set; }
 
     private Vector3 originalPosition;
+    private Coroutine shakeCoroutine;
 
     private void Awake()
     {
@@ -19,7 +20,8 @@ public class CameraShake : MonoBehaviour
     // 外部からこの関数を呼ぶだけで画面が揺れます
     public void Shake(float duration, float magnitude)
     {
-        StartCoroutine(ShakeRoutine(duration, magnitude));
+        if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
+        shakeCoroutine = StartCoroutine(ShakeRoutine(duration, magnitude));
     }
 
     private IEnumerator ShakeRoutine(float duration, float magnitude)
@@ -38,7 +40,7 @@ public class CameraShake : MonoBehaviour
             yield return null;
         }
 
-        // 揺れ終わったら元の位置に必ず戻す（重要）
         transform.position = originalPosition;
+        shakeCoroutine = null;
     }
 }

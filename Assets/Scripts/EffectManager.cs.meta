@@ -3,7 +3,10 @@ guid: b76afc94057abe54fb80a9a65889d784
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - damageEffectPrefab: {fileID: 4440487115774832918, guid: f00e1fc15cfbc4e45bf1a35db3d30e79, type: 3}
+  - deathEffectPrefab: {fileID: 4440487115774832918, guid: 04ce26a7cb9e0ed43819cdda16d588ee, type: 3}
+  - scoreEffectPrefab: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 
