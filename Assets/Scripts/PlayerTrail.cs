@@ -7,8 +7,7 @@ public class PlayerTrail : MonoBehaviour
     [SerializeField] private GameStatus settings;
     [Header("Trail Settings")]
     [SerializeField] private float trailTime = 0.5f;
-    [ColorUsage(true, true)]
-    [SerializeField] private Color trailColor = new Color(0.0f, 0.0f, 0.0f, 1.0f);
+    [SerializeField] private Gradient trailGradient;
 
 
     private LineRenderer lineRenderer;
@@ -18,6 +17,8 @@ public class PlayerTrail : MonoBehaviour
     private void Awake() {
         lineRenderer = GetComponent<LineRenderer>();
         lineRenderer.useWorldSpace = true;
+
+        lineRenderer.colorGradient = trailGradient;
     }
 
     private void Start() {
@@ -50,8 +51,8 @@ public class PlayerTrail : MonoBehaviour
         lineRenderer.positionCount = 0;
     }
 
-    private void lateUpdate() {
-        if (GameManager.Instance != null || GameManager.Instance.CurrentState != GameState.Playing) return;
+    private void LateUpdate() {
+        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
         if (settings == null) return;
 
 
