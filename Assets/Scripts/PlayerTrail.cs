@@ -33,12 +33,16 @@ public class PlayerTrail : MonoBehaviour
         }
     }
 
-    private void HandleStateChanged(GameState state) {
-        if(state == GameState.Playing) {
+    private void HandleStateChanged(GameState state)
+    {
+        if (state == GameState.StartAnim || state == GameState.CharaReady || state == GameState.Playing)
+        {
             lineRenderer.enabled = true;
-            TrailClear();
+            if (state == GameState.StartAnim) TrailClear(); // 演出開始時に一度クリア
         }
-        else {
+        else
+        {
+            // Title や GameOver になった時のみ消去する
             lineRenderer.enabled = false;
             TrailClear();
         }
@@ -51,24 +55,37 @@ public class PlayerTrail : MonoBehaviour
         lineRenderer.positionCount = 0;
     }
 
-    private void LateUpdate() {
-        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
+    private void LateUpdate()
+    {
+        if (GameManager.Instance == null) return;
+        GameState currentState = GameManager.Instance.CurrentState;
+
+        // ReadyとPlayingの時のみ処理を許可
+        if (currentState != GameState.StartAnim && currentState != GameState.CharaReady && currentState != GameState.Playing) return;
         if (settings == null) return;
 
+        float currentSpeed = 0f;
 
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
-        float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
-        float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
+        // 背景や障害物による「後ろへの押し流し（スクロール）」はPlaying中のみ適用する
+        if (currentState == GameState.Playing || currentState == GameState.CharaReady)
+        {
+            float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+            float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
+            currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
+        }
+
         float moveAmount = currentSpeed * Time.deltaTime;
 
-        for (int i = 0; i < points.Count; i++) {
+        for (int i = 0; i < points.Count; i++)
+        {
             points[i] = new Vector3(points[i].x - moveAmount, points[i].y, points[i].z);
         }
 
         points.Insert(0, transform.position);
         spawnTimes.Insert(0, Time.time);
 
-        while(spawnTimes.Count > 0 && Time.time - spawnTimes[spawnTimes.Count - 1] > trailTime) {
+        while (spawnTimes.Count > 0 && Time.time - spawnTimes[spawnTimes.Count - 1] > trailTime)
+        {
             points.RemoveAt(points.Count - 1);
             spawnTimes.RemoveAt(spawnTimes.Count - 1);
         }

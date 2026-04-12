@@ -30,8 +30,7 @@ public class BackgroundScroller2D : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
-        // タイトルに戻った時やリトライ時に背景の位置をリセット
-        if (state == GameState.Title || state == GameState.Playing)
+        if (state == GameState.Title || state == GameState.StartAnim)
         {
             transform.position = startPosition;
         }
@@ -40,7 +39,10 @@ public class BackgroundScroller2D : MonoBehaviour
     private void Update()
     {
         // プレイ中のみ動作
-        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
+        if (GameManager.Instance != null &&
+            GameManager.Instance.CurrentState != GameState.Playing &&
+            GameManager.Instance.CurrentState != GameState.CharaReady &&
+            GameManager.Instance.CurrentState != GameState.PlayerDead) return;
         if (settings == null) return;
 
         // 障害物と完全に同じ計算式でスピードを算出

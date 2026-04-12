@@ -1,9 +1,12 @@
 using TMPro;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI; // TextMeshProを使用する場合は TMPro に変更してください
 
 public class UIManager : MonoBehaviour
 {
+    public static UIManager Instance { get; private set; }
+
     [Header("UI Panels")]
     [SerializeField] private GameObject titlePanel;
     [SerializeField] private GameObject hudPanel;
@@ -25,8 +28,26 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject rankingTextPrefab;  // １順位ずつ表示するためのプレハブ
     [SerializeField] private TextMeshProUGUI[] gameOverRankingTexts;
 
+    [Header("Transition Elements")]
+    [Tooltip("画面全体を覆う黒いUI（CanvasGroup付き）")]
+    [SerializeField] private CanvasGroup fadePanelGroup;
+    [Tooltip("「START」などのテキスト")]
+    [SerializeField] private TextMeshProUGUI startPresentationText;
+
     [Header("References")]
     [SerializeField] private PlayerHealth playerHealth;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void Start()
     {
@@ -64,11 +85,21 @@ public class UIManager : MonoBehaviour
     private void HandleStateChanged(GameState state)
     {
         titlePanel.SetActive(state == GameState.Title);
-        hudPanel.SetActive(state == GameState.Playing);
+
+        // 修正：Ready（入場演出中）、Playing（本編）、PlayerDead（死亡演出中）の時にHUDを表示する
+        if (hudPanel != null)
+        {
+            hudPanel.SetActive(state == GameState.StartAnim ||
+                                state == GameState.CharaReady ||
+                                state == GameState.Playing ||
+                                state == GameState.PlayerDead);
+        }
+
         gameOverPanel.SetActive(state == GameState.GameOver);
 
         if (touchInputPanel != null)
         {
+            // 操作用パネルは「Playing」中のみアクティブにする
             touchInputPanel.SetActive(state == GameState.Playing);
         }
 
@@ -79,7 +110,6 @@ public class UIManager : MonoBehaviour
 
             if (RankingManager.Instance != null)
             {
-                // ここで保存処理を走らせる
                 RankingManager.Instance.AddScoreAndSave(finalScore);
             }
 
@@ -161,6 +191,129 @@ public class UIManager : MonoBehaviour
             {
                 gameOverRankingTexts[i].gameObject.SetActive(false);
             }
+        }
+    }
+
+    public IEnumerator FadeOutRoutine(float duration)
+    {
+        if (fadePanelGroup == null) yield break;
+        fadePanelGroup.gameObject.SetActive(true);
+        fadePanelGroup.blocksRaycasts = true;
+
+        fadePanelGroup.transform.SetAsLastSibling();
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            fadePanelGroup.alpha = Mathf.Lerp(0f, 1f, elapsed / duration);
+            yield return null;
+        }
+        fadePanelGroup.alpha = 1f;
+    }
+
+    public IEnumerator FadeInRoutine(float duration)
+    {
+        if (fadePanelGroup == null) yield break;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            fadePanelGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+            yield return null;
+        }
+        fadePanelGroup.alpha = 0f;
+        fadePanelGroup.blocksRaycasts = false;
+        fadePanelGroup.gameObject.SetActive(false);
+    }
+
+    // キャラクターの入場コルーチン
+    public IEnumerator ReadyPresentationRoutine(Transform playerTransform, Vector2 targetPosition)
+    {
+        Vector2 startPosition = playerTransform != null ? (Vector2)playerTransform.position : targetPosition;
+        startPosition.y = targetPosition.y;
+
+        if (playerTransform != null)
+        {
+            float speed = GameManager.Instance.InitialScrollSpeed;
+            float distance = Vector2.Distance(startPosition, targetPosition);
+            float playerDuration = distance / speed;
+
+            // ▼ 修正：テキストの演出時間をプレイヤーの移動時間のちょうど「2倍」にする
+            float textDuration = playerDuration * 2.0f;
+            StartCoroutine(StartTextPresentationRoutine(textDuration));
+
+            float elapsed = 0f;
+            while (elapsed < playerDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = elapsed / playerDuration;
+
+                playerTransform.position = Vector2.Lerp(startPosition, targetPosition, t);
+
+                yield return null;
+            }
+
+            playerTransform.position = targetPosition;
+        }
+        else
+        {
+            yield return new WaitForSeconds(1.0f);
+        }
+    }
+
+    // テキスト専用の独立したアニメーションコルーチン
+    private IEnumerator StartTextPresentationRoutine(float textDuration)
+    {
+        float elapsed = 0f;
+        RectTransform textRect = null;
+        Vector2 textStartPos = Vector2.zero;
+        Vector2 textEndPos = Vector2.zero;
+
+        if (startPresentationText != null)
+        {
+            startPresentationText.gameObject.SetActive(true);
+            Color initialColor = startPresentationText.color;
+            initialColor.a = 1f;
+            startPresentationText.color = initialColor;
+
+            textRect = startPresentationText.rectTransform;
+            float screenWidthOffset = 1500f;
+            float currentY = textRect.anchoredPosition.y;
+
+            textStartPos = new Vector2(screenWidthOffset, currentY);
+            textEndPos = new Vector2(-screenWidthOffset, currentY);
+        }
+
+        while (elapsed < textDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / textDuration;
+
+            if (textRect != null)
+            {
+                float normalizedT = t - 0.5f;
+                float textEaseT = 4.0f * Mathf.Pow(normalizedT, 3f) + 0.5f;
+
+                textRect.anchoredPosition = Vector2.Lerp(textStartPos, textEndPos, textEaseT);
+            }
+
+            yield return null;
+        }
+
+        if (startPresentationText != null)
+        {
+            startPresentationText.gameObject.SetActive(false);
+            if (textRect != null) textRect.anchoredPosition = new Vector2(0, textRect.anchoredPosition.y);
+        }
+    }
+
+    public IEnumerator WaitTextExitRoutine()
+    {
+        while (startPresentationText != null && startPresentationText.gameObject.activeSelf)
+        {
+            yield return null;
         }
     }
 

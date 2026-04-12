@@ -11,7 +11,9 @@ public class ScrollingObject : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.CurrentState != GameState.Playing) return;
+        if (GameManager.Instance != null &&
+            GameManager.Instance.CurrentState != GameState.Playing &&
+            GameManager.Instance.CurrentState != GameState.PlayerDead) return;
         if (settings == null) return;
 
         float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;

@@ -103,8 +103,8 @@ public class PlayerHealth : MonoBehaviour
             if (CameraShake.Instance != null)
                 CameraShake.Instance.Shake(deathShakeDuration, deathShakeMagnitude);
             OnPlayerDead?.Invoke();
-            GameManager.Instance.ChangeState(GameState.GameOver);
             gameObject.SetActive(false);
+            GameManager.Instance.HandlePlayerDeath();
         }
         else
         {

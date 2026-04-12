@@ -25,11 +25,12 @@ public class PlayerController : MonoBehaviour
 
     private float airRotationSpeed;
     private bool wasGrounded;
-
+    private float defaultGravity;
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         startPosition = transform.position;
+        defaultGravity = rb.gravityScale;
     }
 
     private void Start()
@@ -50,9 +51,21 @@ public class PlayerController : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
-        if (state == GameState.Title || state == GameState.Playing)
+        if (state == GameState.Title)
         {
             transform.position = startPosition;
+            rb.velocity = Vector2.zero;
+        }
+
+        if (state == GameState.Playing)
+        {
+            // ゲーム開始と同時に重力を元に戻す
+            rb.gravityScale = defaultGravity;
+        }
+        else
+        {
+            // Title, Ready(フェードイン＆入場中), GameOver などは重力を完全に切る
+            rb.gravityScale = 0f;
             rb.velocity = Vector2.zero;
         }
     }
