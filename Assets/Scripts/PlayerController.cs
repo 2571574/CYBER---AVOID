@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
@@ -18,7 +18,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float rotationLerpSpeed = 15f;
     [Tooltip("回転させる見た目のオブジェクト")]
     [SerializeField] private Transform visualTransform;
-
+    
+    [Header("Effect Settings")]
+    [Tooltip("接地時のトレイルのパーティクルシステム")]
+    [SerializeField] private ParticleSystem groundSpark;
+    [Tooltip("着地時のパーティクルシステム")]
+    [SerializeField] private ParticleSystem groundImpact;
+    
     private Rigidbody2D rb;
     private bool isGrounded;
     private Vector2 startPosition;
@@ -31,6 +37,8 @@ public class PlayerController : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         startPosition = transform.position;
         defaultGravity = rb.gravityScale;
+
+        StopSparkEffect();
     }
 
     private void Start()
@@ -55,6 +63,7 @@ public class PlayerController : MonoBehaviour
         {
             transform.position = startPosition;
             rb.velocity = Vector2.zero;
+            StopSparkEffect();
         }
 
         if (state == GameState.Playing)
@@ -67,6 +76,10 @@ public class PlayerController : MonoBehaviour
             // Title, Ready(フェードイン＆入場中), GameOver などは重力を完全に切る
             rb.gravityScale = 0f;
             rb.velocity = Vector2.zero;
+            if(state != GameState.CharaReady)
+            {
+                StopSparkEffect();
+            }
         }
     }
 
@@ -77,11 +90,43 @@ public class PlayerController : MonoBehaviour
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing)
         {
             rb.velocity = Vector2.zero; // 停止時は物理挙動も止める
+            if (GameManager.Instance != null &&
+                GameManager.Instance.CurrentState == GameState.StartAnim ||
+                GameManager.Instance.CurrentState == GameState.CharaReady)
+            {
+                isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+                if (groundSpark != null)
+                {
+                    var emission = groundSpark.emission;
+                    emission.enabled = isGrounded;
+                }
+
+                wasGrounded = isGrounded;
+            }
+            else
+            {
+                StopSparkEffect();
+            }
             return;
         }
 
         //接地判定
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+
+        if(groundSpark != null)
+        {
+            var emission = groundSpark.emission;
+
+            emission.enabled = isGrounded;
+
+            if(isGrounded && !wasGrounded)
+            {
+                if(groundImpact != null)
+                {
+                    groundImpact.Play();
+                }
+            }
+        }
 
         if (!isGrounded && wasGrounded)
         {
@@ -125,6 +170,15 @@ public class PlayerController : MonoBehaviour
         }
 
         wasGrounded = isGrounded;
+    }
+
+    private void StopSparkEffect()
+    {
+        if(groundSpark != null)
+        {
+            var emission  = groundSpark.emission;
+            emission.enabled = false;
+        }
     }
 
     // 開発時にUnityエディタ上で判定範囲を視覚化するための機能

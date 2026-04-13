@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI; // TextMeshProを使用する場合は TMPro に変更してください
@@ -9,16 +9,20 @@ public class UIManager : MonoBehaviour
 
     [Header("UI Panels")]
     [SerializeField] private GameObject titlePanel;
-    [SerializeField] private GameObject hudPanel;
     [SerializeField] private GameObject gameOverPanel;
-    [SerializeField] private GameObject touchInputPanel;
     [SerializeField] private GameObject rankingPanel;
 
+    [SerializeField] private GameObject hudPanel;
+    [SerializeField] private CanvasGroup hudPanelGroup;
+    [SerializeField] private GameObject touchInputPanel;
+    [SerializeField] private CanvasGroup touchInputPanelGroup;
     [Header("HUD Elements")]
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private Image[] heartImages;
     [SerializeField] private Sprite fullHeartSprite;
     [SerializeField] private Sprite emptyHeartSprite;
+    [SerializeField] private GameObject bonusTextPrefab;
+    [SerializeField] private Transform bonusTextSpawnPoint;
 
     [Header("GameOver Elements")]
     [SerializeField] private TextMeshProUGUI resultScoreText;
@@ -86,22 +90,24 @@ public class UIManager : MonoBehaviour
     {
         titlePanel.SetActive(state == GameState.Title);
 
-        // 修正：Ready（入場演出中）、Playing（本編）、PlayerDead（死亡演出中）の時にHUDを表示する
+        bool isPlaying = (state == GameState.Playing);
+
         if (hudPanel != null)
         {
-            hudPanel.SetActive(state == GameState.StartAnim ||
-                                state == GameState.CharaReady ||
-                                state == GameState.Playing ||
-                                state == GameState.PlayerDead);
+            hudPanel.SetActive(isPlaying);
+        }
+        if (touchInputPanel != null)
+        {
+            touchInputPanel.SetActive(isPlaying);
         }
 
         gameOverPanel.SetActive(state == GameState.GameOver);
 
-        if (touchInputPanel != null)
+        if(state == GameState.Playing)
         {
-            // 操作用パネルは「Playing」中のみアクティブにする
-            touchInputPanel.SetActive(state == GameState.Playing);
+            StartCoroutine(FadeInGameplayUIRoutine(0.5f));
         }
+
 
         if (state == GameState.GameOver)
         {
@@ -317,6 +323,40 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    public IEnumerator FadeInGameplayUIRoutine(float duration)
+    {
+        if (hudPanelGroup != null) hudPanelGroup.alpha = 0.0f;
+        if(touchInputPanelGroup != null) touchInputPanelGroup.alpha = 0f;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            if (hudPanelGroup != null) hudPanelGroup.alpha = t;
+            if (touchInputPanelGroup != null) touchInputPanelGroup.alpha = t;
+
+            yield return null;
+        }
+
+        if (hudPanelGroup != null) hudPanelGroup.alpha = 1f;
+        if(touchInputPanelGroup != null) touchInputPanelGroup.alpha = 1f;
+    }
+
+    public void ShowBonusText(int scoreValue)
+    {
+        if (bonusTextPrefab == null || bonusTextSpawnPoint == null) return;
+
+        GameObject obj = Instantiate(bonusTextPrefab, bonusTextSpawnPoint);
+
+        BonusTextEffect effect = obj.GetComponent<BonusTextEffect>();
+        if (effect != null)
+        {
+            effect.PlayEffect(scoreValue);
+        }
+    } 
+ 
     // --- ボタンメソッド ---
 
     public void OnClickStartButton()

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ScoreManager : MonoBehaviour
 {
@@ -57,6 +57,10 @@ public class ScoreManager : MonoBehaviour
         {
             CurrentScore += settings.dodgeBonusScore;
             Debug.Log("ボーナス獲得！");
+
+            if (UIManager.Instance != null) {
+                UIManager.Instance.ShowBonusText(Mathf.FloorToInt(settings.dodgeBonusScore));
+            }
         }
     }
 }

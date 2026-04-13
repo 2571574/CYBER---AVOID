@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -52,6 +52,11 @@ public class DetectDodge : MonoBehaviour
                     if (ScoreManager.Instance != null)
                     {
                         ScoreManager.Instance.AddDodgeBonus();
+                    }
+
+                    if(EffectManager.Instance != null && playerHealth != null)
+                    {
+                        EffectManager.Instance.PlayScoreEffect(playerHealth.transform.position);
                     }
                 }
             }
