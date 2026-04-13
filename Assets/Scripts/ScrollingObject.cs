@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class ScrollingObject : MonoBehaviour
 {
@@ -25,7 +25,15 @@ public class ScrollingObject : MonoBehaviour
 
         if (transform.position.x < -15f)
         {
-            Destroy(gameObject);
+            PoolableObject poolable = GetComponent<PoolableObject>();
+            if (poolable != null) 
+            {
+                poolable.ReleaseToPool();
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

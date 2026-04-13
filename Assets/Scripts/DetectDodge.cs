@@ -18,6 +18,14 @@ public class DetectDodge : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (dodgedBullets.Count> 0)
+        {
+            dodgedBullets.RemoveWhere(col => col == null || !col.gameObject.activeInHierarchy);
+        }
+    }
+
     private void OnDestroy()
     {
         if (GameManager.Instance != null)

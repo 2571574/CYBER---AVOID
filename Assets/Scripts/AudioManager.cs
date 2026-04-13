@@ -1,5 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 
+/// <summary>
+/// 音を管理する
+/// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
@@ -16,7 +19,10 @@ public class AudioManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    // === BGMの再生・停止 ===
+    /// <summary>
+    /// BGMの再生、停止
+    /// </summary>
+    /// <param name="clip"></param>
     public void PlayBGM(AudioClip clip)
     {
         if (clip == null) return;
@@ -33,7 +39,10 @@ public class AudioManager : MonoBehaviour
         bgmSource.Stop();
     }
 
-    // === 効果音(SE)の再生 ===
+    /// <summary>
+    /// SEの再生
+    /// </summary>
+    /// <param name="clip"></param>
     public void PlaySE(AudioClip clip)
     {
         if (clip == null) return;

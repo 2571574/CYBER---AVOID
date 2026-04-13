@@ -1,5 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 
+/// <summary>
+/// 背景のスクロールを行うクラス
+/// </summary>
 public class BackgroundScroller2D : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;
@@ -28,6 +31,10 @@ public class BackgroundScroller2D : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ステートが変わった時に行う処理
+    /// </summary>
+    /// <param name="state"></param>
     private void HandleStateChanged(GameState state)
     {
         if (state == GameState.Title || state == GameState.StartAnim)
@@ -38,25 +45,24 @@ public class BackgroundScroller2D : MonoBehaviour
 
     private void Update()
     {
-        // プレイ中のみ動作
         if (GameManager.Instance != null &&
             GameManager.Instance.CurrentState != GameState.Playing &&
             GameManager.Instance.CurrentState != GameState.CharaReady &&
             GameManager.Instance.CurrentState != GameState.PlayerDead) return;
         if (settings == null) return;
 
-        // 障害物と完全に同じ計算式でスピードを算出
+        // 障害物のスピードと同じ計算式
         float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
         float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
-        // Vector3.left（右から左）へ移動
+        // 左へスクロール
         transform.Translate(Vector3.left * currentSpeed * Time.deltaTime);
 
-        // 画像1枚分（spriteWidth）左に移動したら、右にワープさせて無限ループ
+        // 画像1枚分スクロールしたことを検知
         if (transform.position.x <= startPosition.x - spriteWidth)
         {
-            // 移動した分だけ右に位置を戻す
+            // 移動した分だけ位置を戻す
             transform.position += new Vector3(spriteWidth, 0, 0);
         }
     }

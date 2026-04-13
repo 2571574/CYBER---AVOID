@@ -1,7 +1,10 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.Pool;
 
+/// <summary>
+/// 弾を生成するクラス
+/// </summary>
 public class BulletSpawner : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;

@@ -2,6 +2,9 @@
 using TMPro;
 using System.Collections;
 
+/// <summary>
+/// 回避ボーナスの文字エフェクト
+/// </summary>
 public class BonusTextEffect : MonoBehaviour
 {
     [Tooltip("フェード用のCanvasGroup")]
@@ -15,12 +18,20 @@ public class BonusTextEffect : MonoBehaviour
     [Tooltip("上に移動する距離")]
     [SerializeField] private float moveDistance = 50f;
 
+    /// <summary>
+    /// エフェクトを再生する
+    /// </summary>
+    /// <param name="scoreValue">加算するスコア量</param>
     public void PlayEffect(int scoreValue)
     {
         if(text != null) text.text = "+" + scoreValue.ToString();
         StartCoroutine(AnimateRoutine());
     }
 
+    /// <summary>
+    /// 文字アニメーションの再生
+    /// </summary>
+    /// <returns></returns>
     private IEnumerator AnimateRoutine()
     {
         Vector3 startPos = transform.localPosition;
@@ -53,17 +64,5 @@ public class BonusTextEffect : MonoBehaviour
             yield return null;
         }
         Destroy(gameObject);
-    }
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
     }
 }
