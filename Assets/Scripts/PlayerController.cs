@@ -91,8 +91,8 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = Vector2.zero; // 停止時は物理挙動も止める
             if (GameManager.Instance != null &&
-                GameManager.Instance.CurrentState == GameState.StartAnim ||
-                GameManager.Instance.CurrentState == GameState.CharaReady)
+                (GameManager.Instance.CurrentState == GameState.StartAnim ||
+                GameManager.Instance.CurrentState == GameState.CharaReady))
             {
                 isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
                 if (groundSpark != null)

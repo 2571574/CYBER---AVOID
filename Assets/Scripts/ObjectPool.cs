@@ -11,32 +11,6 @@ public class PoolableObject : MonoBehaviour
         this.pool = pool;
     }
 
-    private void OnEnable()
-    {
-        if (GameManager.Instance != null)
-        {
-            // 有効化されたらGameManagerのイベントを監視
-            GameManager.Instance.OnStateChanged += HandleStateChanged;
-        }
-    }
-
-    private void OnDisable()
-    {
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.OnStateChanged -= HandleStateChanged;
-        }
-    }
-
-    private void HandleStateChanged(GameState state)
-    {
-        // タイトルに戻る、またはリトライ時に自身をプールへ戻す
-        if (state == GameState.Title || state == GameState.Playing)
-        {
-            ReleaseToPool();
-        }
-    }
-
     public void ReleaseToPool()
     {
         // 重複して解放しないようにアクティブ状態をチェック

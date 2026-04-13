@@ -69,6 +69,10 @@ public class BulletSpawner : MonoBehaviour
         {
             bulletTimer = 0f;
         }
+        if (state == GameState.Title || state == GameState.StartAnim)
+        {
+            StopAllCoroutines();
+        }
     }
 
     void Update()

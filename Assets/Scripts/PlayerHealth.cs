@@ -54,7 +54,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
-        if (state == GameState.Title || state == GameState.Playing)
+        if (state == GameState.Title || state == GameState.StartAnim || state == GameState.Playing)
         {
             if (settings != null) CurrentHealth = settings.maxHealth;
             isInvincible = false;

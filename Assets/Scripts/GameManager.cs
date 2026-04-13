@@ -173,6 +173,14 @@ public class GameManager : MonoBehaviour
 
     private void ClearField()
     {
+        PoolableObject[] poolables = FindObjectsOfType<PoolableObject>();
+        foreach (var p in poolables)
+        {
+            if (p != null && p.gameObject.activeInHierarchy)
+            {
+                p.ReleaseToPool();
+            }
+        }
     }
 
     public Vector2 GetDynamicScreenRange()
