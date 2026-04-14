@@ -68,7 +68,6 @@ public class UIManager : MonoBehaviour
         if (playerHealth != null)
         {
             playerHealth.OnHealthChanged += UpdateHealthUI;
-            UpdateHealthUI(playerHealth.CurrentHealth);
         }
 
         if (rankingPanel != null) rankingPanel.SetActive(false);

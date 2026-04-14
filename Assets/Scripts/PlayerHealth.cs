@@ -35,7 +35,6 @@ public class PlayerHealth : MonoBehaviour
 
     private void Start()
     {
-        if (settings != null) CurrentHealth = settings.maxHealth;
         if (GameManager.Instance != null) GameManager.Instance.OnStateChanged += HandleStateChanged;
 
         if (spriteRenderer != null && spriteRenderer.material != null)
@@ -85,6 +84,11 @@ public class PlayerHealth : MonoBehaviour
         if (collision.CompareTag("Obstacle") || collision.CompareTag("Bullet"))
         {
             TakeDamage();
+            if (collision.CompareTag("Bullet"))
+            {
+                var poolable = collision.GetComponent<PoolableObject>();
+                if (poolable != null) poolable.ReleaseToPool();
+            }
         }
     }
 

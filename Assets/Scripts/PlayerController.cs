@@ -59,9 +59,9 @@ public class PlayerController : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
-        if (state == GameState.Title)
+        if (state == GameState.StartAnim)
         {
-            transform.position = startPosition;
+            visualTransform.transform.rotation = Quaternion.identity;
             rb.velocity = Vector2.zero;
             StopSparkEffect();
         }

@@ -47,22 +47,21 @@ public class DetectDodge : MonoBehaviour
     {
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
 
-        // タグが「Bullet」であり、かつまだボーナスをもらっていない弾なら
         if (collision.CompareTag("Bullet"))
         {
-            if (!dodgedBullets.Contains(collision))
+            // 弾のスクリプトを取得
+            Bullet bullet = collision.GetComponent<Bullet>();
+
+            // まだボーナスをもらっていない弾なら
+            if (bullet != null && !bullet.isDodged)
             {
                 if (playerHealth != null && !playerHealth.IsInvincible)
                 {
-                    // 弾をリストに登録し、ボーナスを加算
-                    dodgedBullets.Add(collision);
+                    // フラグを立てて二重加算を防ぐ
+                    bullet.isDodged = true;
 
-                    if (ScoreManager.Instance != null)
-                    {
-                        ScoreManager.Instance.AddDodgeBonus();
-                    }
-
-                    if(EffectManager.Instance != null && playerHealth != null)
+                    if (ScoreManager.Instance != null) ScoreManager.Instance.AddDodgeBonus();
+                    if (EffectManager.Instance != null && playerHealth != null)
                     {
                         EffectManager.Instance.PlayScoreEffect(playerHealth.transform.position);
                     }

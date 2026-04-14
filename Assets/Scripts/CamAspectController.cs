@@ -9,15 +9,31 @@ public class CameraAspectController : MonoBehaviour
 
     private Camera cam;
 
+    private int lastScreenWidth;
+    private int lastScreenHeight;
+
     void Start()
     {
         cam = GetComponent<Camera>();
+
+        // 起動時の画面サイズを記憶
+        lastScreenWidth = Screen.width;
+        lastScreenHeight = Screen.height;
+
         UpdateCameraRect();
     }
 
     void Update()
     {
-        UpdateCameraRect();
+        // 画面の幅か高さが、前回記憶した値と異なる場合のみ計算処理を実行
+        if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
+        {
+            UpdateCameraRect();
+
+            // 新しい画面サイズを記憶し直す
+            lastScreenWidth = Screen.width;
+            lastScreenHeight = Screen.height;
+        }
     }
 
     void UpdateCameraRect()

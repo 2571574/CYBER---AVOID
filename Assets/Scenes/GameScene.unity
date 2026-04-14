@@ -5316,7 +5316,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   settings: {fileID: 11400000, guid: 23608faae876f584eacfe3a0390f132b, type: 2}
   spriteRenderer: {fileID: 1570752701}
-  burstFlashColor: {r: 1, g: 0.4198113, b: 0.4198113, a: 1}
+  burstFlashColor: {r: 1, g: 0, b: 0, a: 1}
   burstMultiplier: 15
   damageShakeDuration: 0.15
   damageShakeMagnitude: 0.1
@@ -13054,7 +13054,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 11400000, guid: 23608faae876f584eacfe3a0390f132b, type: 2}
-  deathWaitTime: 3.5
+  deathWaitTime: 2.5
   playerStartSpawnPosition: {x: -5, y: 1.3593}
   playerReadyPosition: {x: 0, y: 1.3593}
   playerTransform: {fileID: 63074736}
