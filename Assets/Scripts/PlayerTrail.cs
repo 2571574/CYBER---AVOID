@@ -71,7 +71,7 @@ public class PlayerTrail : MonoBehaviour
         {
             float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
             float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
-            currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
+            currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed) * GameManager.Instance.GlobalScrollMultiplier;
         }
 
         float moveAmount = currentSpeed * Time.deltaTime;

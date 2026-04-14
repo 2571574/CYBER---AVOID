@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -18,7 +18,7 @@ public class GameManager : MonoBehaviour
 
     public GameState CurrentState { get; private set; }
     public float DifficultyMultiplier { get; private set; } = 1.0f;
-
+    public float GlobalScrollMultiplier { get; private set; } = 1.0f;
     [SerializeField] private GameStatus settings;
 
     public float InitialScrollSpeed => settings != null ? settings.scrollSpeed : 8.0f;
@@ -141,7 +141,19 @@ public class GameManager : MonoBehaviour
         isTransitioning = true; // ▼ ロック開始
 
         ChangeState(GameState.PlayerDead);
-        yield return new WaitForSeconds(deathWaitTime);
+
+        float elapsed = 0f;
+        while(elapsed < deathWaitTime)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / deathWaitTime);
+
+            float easeOutT = 1f - Mathf.Pow(1f - t, 3f);
+            GlobalScrollMultiplier = Mathf.Lerp(1.0f,0.0f,easeOutT);
+            yield return null;
+        }
+        GlobalScrollMultiplier = 0.0f;
+
         yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(1.0f));
 
         ChangeState(GameState.GameOver);
@@ -169,6 +181,7 @@ public class GameManager : MonoBehaviour
     {
         playTimer = 0f;
         DifficultyMultiplier = 1.0f;
+        GlobalScrollMultiplier = 1.0f;
     }
 
     private void ClearField()

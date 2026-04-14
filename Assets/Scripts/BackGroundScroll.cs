@@ -60,7 +60,7 @@ public class BackgroundScroller2D : MonoBehaviour
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
         // 左へスクロール
-        transform.Translate(Vector3.left * currentSpeed * Time.deltaTime);
+        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.GlobalScrollMultiplier * Time.deltaTime);
 
         // 画像1枚分スクロールしたことを検知
         if (transform.position.x <= startPosition.x - spriteWidth)

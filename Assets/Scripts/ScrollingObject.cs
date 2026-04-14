@@ -21,7 +21,7 @@ public class ScrollingObject : MonoBehaviour
         float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
-        transform.Translate(Vector3.left * currentSpeed * Time.deltaTime);
+        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.GlobalScrollMultiplier * Time.deltaTime);
 
         if (transform.position.x < -15f)
         {

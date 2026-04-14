@@ -13054,7 +13054,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 11400000, guid: 23608faae876f584eacfe3a0390f132b, type: 2}
-  deathWaitTime: 1.5
+  deathWaitTime: 3.5
   playerStartSpawnPosition: {x: -5, y: 1.3593}
   playerReadyPosition: {x: 0, y: 1.3593}
   playerTransform: {fileID: 63074736}
@@ -14397,8 +14397,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   settings: {fileID: 11400000, guid: 23608faae876f584eacfe3a0390f132b, type: 2}
-  spikePrefab: {fileID: 6699413487615488324, guid: a3f39e398c9de384495084f166830bcd, type: 3}
-  beamPrefab: {fileID: 6699413487615488324, guid: a3f39e398c9de384495084f166830bcd, type: 3}
+  groundPrefab: {fileID: 6699413487615488324, guid: a3f39e398c9de384495084f166830bcd, type: 3}
+  airPrefab: {fileID: 6699413487615488324, guid: b04dc1d176153eb4aa4bc7306df59e79, type: 3}
   groundSpawnPoint: {fileID: 1023551970}
   airSpawnPoint: {fileID: 1811186810}
 --- !u!1 &1309844978
