@@ -7,15 +7,18 @@ public class BackgroundScroller2D : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;
 
-    [Tooltip("背景画像1枚分の横幅（Unityの座標距離）を入力してください")]
-    [SerializeField] private float spriteWidth;
-
+    private float spriteWidth;
     private Vector3 startPosition;
 
     private void Start()
     {
         // 初期位置を記憶
         startPosition = transform.position;
+
+        SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
+        if(sr != null){
+            spriteWidth = sr.bounds.size.x;
+        }
 
         if (GameManager.Instance != null)
         {

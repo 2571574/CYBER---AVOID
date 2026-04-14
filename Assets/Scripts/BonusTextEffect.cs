@@ -17,6 +17,7 @@ public class BonusTextEffect : MonoBehaviour
     [SerializeField] private float duration = 1.0f;
     [Tooltip("上に移動する距離")]
     [SerializeField] private float moveDistance = 50f;
+    
 
     /// <summary>
     /// エフェクトを再生する
@@ -37,30 +38,34 @@ public class BonusTextEffect : MonoBehaviour
         Vector3 startPos = transform.localPosition;
         Vector3 endPos = startPos + new Vector3(0, moveDistance, 0);
 
-        float halfDuration = duration / 2f;
         float elapsed = 0f;
 
+        if (canvasGroup != null) canvasGroup.alpha = 0f;
 
-        while (elapsed < halfDuration)
+        while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = elapsed / halfDuration;
+            float t = Mathf.Clamp01(elapsed / duration);
 
-            if (canvasGroup != null) canvasGroup.alpha = t;
-            transform.localPosition = Vector3.Lerp(startPos, Vector3.Lerp(startPos, endPos, 0.5f), t);
+            float easeOutT = 1f - Mathf.Pow(1f - t, 3f);
+            transform.localPosition = Vector3.Lerp(startPos, endPos, easeOutT);
 
-            yield return null;
-        }
-        elapsed += Time.deltaTime;
-        Vector3 midPos = transform.localPosition;
+            if (canvasGroup != null)
+            {
+                if (t < 0.1f)
+                {
+                    canvasGroup.alpha = t / 0.1f;
+                }
+                else if (t > 0.7f)
+                {
+                    canvasGroup.alpha = 1f - ((t - 0.7f) / 0.3f);
+                }
+                else
+                {
+                    canvasGroup.alpha = 1f;
+                }
+            }
 
-        while (elapsed < halfDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / halfDuration;
-
-            if (canvasGroup != null) canvasGroup.alpha = 1f - t;
-            transform.localPosition = Vector3.Lerp(midPos, endPos, t);
             yield return null;
         }
         Destroy(gameObject);

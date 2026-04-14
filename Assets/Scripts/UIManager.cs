@@ -11,6 +11,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject titlePanel;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private GameObject rankingPanel;
+    [SerializeField] private GameObject guidePanel;
 
     [SerializeField] private GameObject hudPanel;
     [SerializeField] private CanvasGroup hudPanelGroup;
@@ -71,6 +72,7 @@ public class UIManager : MonoBehaviour
         }
 
         if (rankingPanel != null) rankingPanel.SetActive(false);
+        if (guidePanel != null) guidePanel.SetActive(false);
     }
 
     private void OnDestroy()
@@ -326,7 +328,7 @@ public class UIManager : MonoBehaviour
     public IEnumerator FadeInGameplayUIRoutine(float duration)
     {
         if (hudPanelGroup != null) hudPanelGroup.alpha = 0.0f;
-        if(touchInputPanelGroup != null) touchInputPanelGroup.alpha = 0f;
+        if (touchInputPanelGroup != null) touchInputPanelGroup.alpha = 0f;
 
         float elapsed = 0f;
         while (elapsed < duration)
@@ -341,7 +343,7 @@ public class UIManager : MonoBehaviour
         }
 
         if (hudPanelGroup != null) hudPanelGroup.alpha = 1f;
-        if(touchInputPanelGroup != null) touchInputPanelGroup.alpha = 1f;
+        if (touchInputPanelGroup != null) touchInputPanelGroup.alpha = 1f;
     }
 
     public void ShowBonusText(int scoreValue)
@@ -382,5 +384,15 @@ public class UIManager : MonoBehaviour
     public void OnClickCloseRankingButton()
     {
         if (rankingPanel != null) rankingPanel.SetActive(false);
+    }
+
+    public void OnClickOpenGuideButton()
+    {
+        if (guidePanel != null) guidePanel.SetActive(true);
+    }
+
+    public void OnClickCloseGuideButton()
+    {
+        if (guidePanel != null) guidePanel.SetActive(false);
     }
 }

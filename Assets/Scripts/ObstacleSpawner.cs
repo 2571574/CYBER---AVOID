@@ -1,24 +1,24 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Pool;
 
 public class ObstacleSpawner : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;
-    [SerializeField] private GameObject spikePrefab;
-    [SerializeField] private GameObject beamPrefab;
+    [SerializeField] private GameObject groundPrefab;
+    [SerializeField] private GameObject airPrefab;
     [Header("Spawn Points")]
     [SerializeField] private Transform groundSpawnPoint;
     [SerializeField] private Transform airSpawnPoint;
 
     private float spawnTimer;
 
-    private ObjectPool<GameObject> spikePool;
-    private ObjectPool<GameObject> beamPool;
+    private ObjectPool<GameObject> groundPool;
+    private ObjectPool<GameObject> airPool;
 
     private void Awake()
     {
-        spikePool = CreatePool(spikePrefab);
-        beamPool = CreatePool(beamPrefab);
+        groundPool = CreatePool(groundPrefab);
+        airPool = CreatePool(airPrefab);
     }
 
     private ObjectPool<GameObject> CreatePool(GameObject prefab)
@@ -82,7 +82,7 @@ public class ObstacleSpawner : MonoBehaviour
     void SpawnRandomObstacle()
     {
         bool isSpike = Random.value > 0.5f;
-        ObjectPool<GameObject> activePool = isSpike ? spikePool : beamPool;
+        ObjectPool<GameObject> activePool = isSpike ? groundPool : airPool;
         Vector3 spawnPos = isSpike ? groundSpawnPoint.position : airSpawnPoint.position;
 
         GameObject obj = activePool.Get();
