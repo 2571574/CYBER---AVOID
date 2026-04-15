@@ -2,42 +2,62 @@
 using System.Collections;
 using UnityEngine;
 
+/// <summary>
+/// ゲームの進行ステート
+/// </summary>
 public enum GameState
 {
-    Title,
-    StartAnim,      // キャラクター入場・スタート文字演出中
-    CharaReady,
-    Playing,
-    PlayerDead, // プレイヤー死亡・エフェクト待機中（既存オブジェクトは動く）
+    Title,      // タイトル
+    StartAnim,  // スタート演出中
+    CharaReady, // キャラ演出終了、テキスト演出中
+    Playing,    // ゲーム内
+    PlayerDead, // プレイヤーの死亡エフェクト中
     GameOver    // リザルト画面
 }
 
+/// <summary>
+/// ゲーム全体の流れを管理するクラス
+/// </summary>
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    // 現在のゲームステート
     public GameState CurrentState { get; private set; }
+
+    // 時間経過で上昇する時の難易度の倍率
     public float DifficultyMultiplier { get; private set; } = 1.0f;
+
+    //全体スクロールの倍率(死亡アニメーション時などに使用
     public float GlobalScrollMultiplier { get; private set; } = 1.0f;
+
+    [Tooltip("ゲーム内のパラメータ")]
     [SerializeField] private GameStatus settings;
 
+    //現在の基準のスクロール速度を外部に送るプロパティ
     public float InitialScrollSpeed => settings != null ? settings.scrollSpeed : 8.0f;
 
-    // 演出用のパラメータ
     [Header("Presentation Settings")]
-    [Tooltip("死亡時のエフェクトを待機する秒数")]
+    [Tooltip("死亡エフェクトの待機秒数")]
     [SerializeField] private float deathWaitTime = 1.5f;
-    [Tooltip("キャラクター入場時のスタート位置（カメラ外）")]
+    [Tooltip("スタート時のキャラクターの初期位置(カメラ外からの入場)")]
     [SerializeField] private Vector2 playerStartSpawnPosition = new Vector2(-5f, 0f);
-    [Tooltip("キャラクターの定位置（ゲームプレイ中の基準位置）")]
+    [Tooltip("ゲームスタート位置")]
     [SerializeField] private Vector2 playerReadyPosition = new Vector2(0f, 0f);
     [Tooltip("操作するプレイヤーキャラクターのTransform")]
     [SerializeField] private Transform playerTransform;
 
+    /// <summary>
+    /// ステートが変化した時のイベント
+    /// </summary>
     public event Action<GameState> OnStateChanged;
+
+    //プレイ時間(1ゲーム内)
     private float playTimer;
 
+    //シーン遷移中のロックフラグ
     private bool isTransitioning = false;
+
 
     private void Awake()
     {
@@ -48,9 +68,9 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        // 起動時は即座にタイトルへ
         ChangeState(GameState.Title);
     }
+
 
     private void Update()
     {
@@ -59,11 +79,16 @@ public class GameManager : MonoBehaviour
             playTimer += Time.deltaTime;
             if (settings != null)
             {
+                //IncreaseIntervalごとにIncreaseRate分だけ難易度倍率を上げる
                 DifficultyMultiplier = 1.0f + Mathf.Max(0f, (playTimer / settings.difficultyIncreaseInterval) * settings.difficultyIncreaseRate);
             }
         }
     }
 
+    /// <summary>
+    /// ステートを変更し、イベントを発行して他のスクリプトに知らせる
+    /// </summary>
+    /// <param name="newState">変更後のステート</param>
     public void ChangeState(GameState newState)
     {
         CurrentState = newState;
@@ -75,7 +100,46 @@ public class GameManager : MonoBehaviour
         OnStateChanged?.Invoke(newState);
     }
 
-    // --- 遷移シーケンス群 ---
+    /// <summary>
+    /// ゲームの難易度と経過時間を初期状態に戻す
+    /// </summary>
+    private void ResetStatus()
+    {
+        playTimer = 0f;
+        DifficultyMultiplier = 1.0f;
+        GlobalScrollMultiplier = 1.0f;
+    }
+
+    /// <summary>
+    /// フィールド上のオブジェクトを全てプールに戻す
+    /// </summary>
+    private void ClearField()
+    {
+        PoolableObject[] poolables = FindObjectsOfType<PoolableObject>();
+        foreach (var p in poolables)
+        {
+            if (p != null && p.gameObject.activeInHierarchy)
+            {
+                p.ReleaseToPool();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 現在のカメラのアスペクト比から左右の端の座標を計算する
+    /// </summary>
+    /// <returns></returns>
+    public Vector2 GetDynamicScreenRange()
+    {
+        if (Camera.main != null)
+        {
+            float halfWidth = Camera.main.orthographicSize * Camera.main.aspect;
+            return new Vector2(-halfWidth + 0.15f, halfWidth - 0.15f);
+        }
+        return new Vector2(-2.8f, 2.8f);
+    }
+
+    // シーン遷移を外部から呼ぶための関数
 
     public void StartGame()
     {
@@ -104,11 +168,11 @@ public class GameManager : MonoBehaviour
         StartCoroutine(PlayerDeathSequence());
     }
 
-    // --- コルーチンによるシーケンス処理 ---
+    // コルーチンによるシーケンス処理
 
     private IEnumerator StartGameSequence()
     {
-        isTransitioning = true; // ▼ ロック開始
+        isTransitioning = true;
 
         yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(0.5f));
 
@@ -126,19 +190,18 @@ public class GameManager : MonoBehaviour
 
         yield return StartCoroutine(UIManager.Instance.ReadyPresentationRoutine(playerTransform, playerReadyPosition));
 
-        // ▼ 修正：後半（スクロールのみを開始し、テキストが完全に消えるまで待機）
+        
         ChangeState(GameState.CharaReady);
         yield return StartCoroutine(UIManager.Instance.WaitTextExitRoutine());
 
-        // ▼ 本編開始（敵の出現や操作がここで有効になる）
         ChangeState(GameState.Playing);
 
-        isTransitioning = false; // ▼ ロック解除
+        isTransitioning = false; 
     }
 
     private IEnumerator PlayerDeathSequence()
     {
-        isTransitioning = true; // ▼ ロック開始
+        isTransitioning = true;
 
         ChangeState(GameState.PlayerDead);
 
@@ -159,12 +222,12 @@ public class GameManager : MonoBehaviour
         ChangeState(GameState.GameOver);
         yield return StartCoroutine(UIManager.Instance.FadeInRoutine(0.5f));
 
-        isTransitioning = false; // ▼ ロック解除
+        isTransitioning = false;
     }
 
     private IEnumerator GoToTitleSequence()
     {
-        isTransitioning = true; // ▼ ロック開始
+        isTransitioning = true;
 
         yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(0.5f));
 
@@ -174,35 +237,8 @@ public class GameManager : MonoBehaviour
 
         yield return StartCoroutine(UIManager.Instance.FadeInRoutine(0.5f));
 
-        isTransitioning = false; // ▼ ロック解除
+        isTransitioning = false;
     }
 
-    private void ResetStatus()
-    {
-        playTimer = 0f;
-        DifficultyMultiplier = 1.0f;
-        GlobalScrollMultiplier = 1.0f;
-    }
 
-    private void ClearField()
-    {
-        PoolableObject[] poolables = FindObjectsOfType<PoolableObject>();
-        foreach (var p in poolables)
-        {
-            if (p != null && p.gameObject.activeInHierarchy)
-            {
-                p.ReleaseToPool();
-            }
-        }
-    }
-
-    public Vector2 GetDynamicScreenRange()
-    {
-        if (Camera.main != null)
-        {
-            float halfWidth = Camera.main.orthographicSize * Camera.main.aspect;
-            return new Vector2(-halfWidth + 0.15f, halfWidth - 0.15f);
-        }
-        return new Vector2(-2.8f, 2.8f);
-    }
 }

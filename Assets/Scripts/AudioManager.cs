@@ -1,16 +1,16 @@
 ﻿using UnityEngine;
 
 /// <summary>
-/// 音を管理する
+/// ゲーム全体の音を管理するクラス
 /// </summary>
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
 
     [Header("Audio Sources")]
-    [Tooltip("BGMを流すためのAudioSourceを紐付けてください")]
+    [Tooltip("BGMを流すためのAudioSource")]
     [SerializeField] private AudioSource bgmSource;
-    [Tooltip("効果音(SE)を流すためのAudioSourceを紐付けてください")]
+    [Tooltip("SEを流すためのAudioSource")]
     [SerializeField] private AudioSource seSource;
 
     private void Awake()
@@ -20,33 +20,35 @@ public class AudioManager : MonoBehaviour
     }
 
     /// <summary>
-    /// BGMの再生、停止
+    /// 指定のAudioClipのBGMを再生する
     /// </summary>
-    /// <param name="clip"></param>
+    /// <param name="clip">再生したいBGMのAudioClip</param>
     public void PlayBGM(AudioClip clip)
     {
         if (clip == null) return;
 
-        // すでに同じBGMが流れている場合は最初から再生し直さない
+        //既に同じBGMが流れていたら流し続ける
         if (bgmSource.clip == clip && bgmSource.isPlaying) return;
 
         bgmSource.clip = clip;
         bgmSource.Play();
     }
 
+    /// <summary>
+    /// 再生中のBGMを停止する
+    /// </summary>
     public void StopBGM()
     {
         bgmSource.Stop();
     }
 
     /// <summary>
-    /// SEの再生
+    /// 指定のAudioClipのSEを再生する
     /// </summary>
-    /// <param name="clip"></param>
+    /// <param name="clip">再生したいSEのAudioClip</param>
     public void PlaySE(AudioClip clip)
     {
         if (clip == null) return;
-        // PlayOneShotを使うことで、音が重なっても途切れずに複数鳴らすことができます
         seSource.PlayOneShot(clip);
     }
 }

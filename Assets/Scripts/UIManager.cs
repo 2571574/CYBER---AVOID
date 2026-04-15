@@ -1,45 +1,68 @@
 ﻿using TMPro;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI; // TextMeshProを使用する場合は TMPro に変更してください
+using UnityEngine.UI; 
 
+/// <summary>
+/// ゲーム内全てのUIを管理するクラス
+/// </summary>
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
 
     [Header("UI Panels")]
+    [Tooltip("タイトル画面のパネル")]
     [SerializeField] private GameObject titlePanel;
+    [Tooltip("ゲームオーバー画面のパネル")]
     [SerializeField] private GameObject gameOverPanel;
+    [Tooltip("ランキング画面のパネル")]
     [SerializeField] private GameObject rankingPanel;
+    [Tooltip("ガイド画面のパネル")]
     [SerializeField] private GameObject guidePanel;
 
+    [Tooltip("プレイ中HUDのパネル")]
     [SerializeField] private GameObject hudPanel;
+    [Tooltip("フェードインのためのHUDのCanvasGroup")]
     [SerializeField] private CanvasGroup hudPanelGroup;
+    [Tooltip("操作パネル")]
     [SerializeField] private GameObject touchInputPanel;
+    [Tooltip("フェードインのための操作パネルのCanvasGroup")]
     [SerializeField] private CanvasGroup touchInputPanelGroup;
+
     [Header("HUD Elements")]
+    [Tooltip("スコアを表示させるテキスト")]
     [SerializeField] private TextMeshProUGUI scoreText;
+    [Tooltip("体力を表示させる画像の配列")]
     [SerializeField] private Image[] heartImages;
+    [Tooltip("体力がある時のアイコン")]
     [SerializeField] private Sprite fullHeartSprite;
+    [Tooltip("体力がない時のアイコン")]
     [SerializeField] private Sprite emptyHeartSprite;
+    [Tooltip("回避時のボーナススコアのテキストのプレハブ")]
     [SerializeField] private GameObject bonusTextPrefab;
+    [Tooltip("ボーナステキストの生成位置")]
     [SerializeField] private Transform bonusTextSpawnPoint;
 
     [Header("GameOver Elements")]
+    [Tooltip("スコアを表示させるテキスト")]
     [SerializeField] private TextMeshProUGUI resultScoreText;
 
     [Header("Ranking Elements")]
-    [SerializeField] private Transform titleRankingContent; //タイトルのランキング
-    [SerializeField] private GameObject rankingTextPrefab;  // １順位ずつ表示するためのプレハブ
+    [Tooltip("タイトルでランキングを一覧で並べるオブジェクト")]
+    [SerializeField] private Transform titleRankingContent;
+    [Tooltip("1順位ずつ表示させるためのテキストのプレハブ")]
+    [SerializeField] private GameObject rankingTextPrefab;
+    [Tooltip("順位テキストの配列")]
     [SerializeField] private TextMeshProUGUI[] gameOverRankingTexts;
 
     [Header("Transition Elements")]
-    [Tooltip("画面全体を覆う黒いUI（CanvasGroup付き）")]
+    [Tooltip("フェード用の黒いパネルのCanvasGroup")]
     [SerializeField] private CanvasGroup fadePanelGroup;
-    [Tooltip("「START」などのテキスト")]
+    [Tooltip("ゲーム開始時のStartのテキスト")]
     [SerializeField] private TextMeshProUGUI startPresentationText;
 
     [Header("References")]
+    [Tooltip("PlayerHealthの参照")]
     [SerializeField] private PlayerHealth playerHealth;
 
     private void Awake()
@@ -56,12 +79,9 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        // 全員の準備が終わるStartのタイミングで登録する
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnStateChanged += HandleStateChanged;
-
-            // ついでに、起動時の状態（タイトル画面）を強制的にUIに反映させる
             HandleStateChanged(GameManager.Instance.CurrentState);
         }
 
@@ -72,6 +92,17 @@ public class UIManager : MonoBehaviour
 
         if (rankingPanel != null) rankingPanel.SetActive(false);
         if (guidePanel != null) guidePanel.SetActive(false);
+    }
+
+    private void Update()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)
+        {
+            if (scoreText != null && ScoreManager.Instance != null)
+            {
+                scoreText.text = "SCORE: " + Mathf.FloorToInt(ScoreManager.Instance.CurrentScore).ToString();
+            }
+        }
     }
 
     private void OnDestroy()
@@ -87,6 +118,10 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// GameManagerのステートが変化したとき、該当するパネルの表示非表示を切り替える
+    /// </summary>
+    /// <param name="state">変更後のステート</param>
     private void HandleStateChanged(GameState state)
     {
         titlePanel.SetActive(state == GameState.Title);
@@ -124,25 +159,17 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        // プレイ中のみスコア表示を毎フレーム更新
-        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)
-        {
-            if (scoreText != null && ScoreManager.Instance != null)
-            {
-                scoreText.text = "SCORE: " + Mathf.FloorToInt(ScoreManager.Instance.CurrentScore).ToString();
-            }
-        }
-    }
 
+    /// <summary>
+    /// 体力が変化したとき、体力のアイコンを切り替える
+    /// </summary>
+    /// <param name="currentHealth"></param>
     private void UpdateHealthUI(int currentHealth)
     {
         if (heartImages == null || heartImages.Length == 0) return;
 
         for (int i = 0; i < heartImages.Length; i++)
         {
-            // 現在の体力よりインデックスが小さければ満タン、それ以上なら空の画像にする
             if (i < currentHealth)
             {
                 heartImages[i].sprite = fullHeartSprite;
@@ -154,11 +181,13 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    //ランキングの更新
+
     private void UpdateTitleRankingUI()
     {
         if (RankingManager.Instance == null || titleRankingContent == null || rankingTextPrefab == null) return;
 
-        // 既存のリストをクリア（重複生成を防ぐため）
+        // 既存のリストをクリア
         foreach (Transform child in titleRankingContent)
         {
             Destroy(child.gameObject);
@@ -173,7 +202,6 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        // 30件すべて生成
         for (int i = 0; i < highScores.Count; i++)
         {
             GameObject obj = Instantiate(rankingTextPrefab, titleRankingContent);
@@ -187,6 +215,7 @@ public class UIManager : MonoBehaviour
 
         var highScores = RankingManager.Instance.CurrentRanking.highScores;
 
+        //あらかじめ配置されたテキストを使いまわす
         for (int i = 0; i < gameOverRankingTexts.Length; i++)
         {
             if (i < highScores.Count)
@@ -201,6 +230,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 画面を暗くする演出
+    /// </summary>
+    /// <param name="duration">演出にかかる時間</param>
+    /// <returns></returns>
     public IEnumerator FadeOutRoutine(float duration)
     {
         if (fadePanelGroup == null) yield break;
@@ -219,6 +253,11 @@ public class UIManager : MonoBehaviour
         fadePanelGroup.alpha = 1f;
     }
 
+    /// <summary>
+    /// 画面を明るくする演出
+    /// </summary>
+    /// <param name="duration">演出にかかる時間</param>
+    /// <returns></returns>
     public IEnumerator FadeInRoutine(float duration)
     {
         if (fadePanelGroup == null) yield break;
@@ -235,7 +274,12 @@ public class UIManager : MonoBehaviour
         fadePanelGroup.gameObject.SetActive(false);
     }
 
-    // キャラクターの入場コルーチン
+    /// <summary>
+    /// ゲーム開始前にプレイヤーが定位置に移動する演出
+    /// </summary>
+    /// <param name="playerTransform">プレイヤーのtransform</param>
+    /// <param name="targetPosition">目標座標</param>
+    /// <returns></returns>
     public IEnumerator ReadyPresentationRoutine(Transform playerTransform, Vector2 targetPosition)
     {
         Vector2 startPosition = playerTransform != null ? (Vector2)playerTransform.position : targetPosition;
@@ -243,11 +287,13 @@ public class UIManager : MonoBehaviour
 
         if (playerTransform != null)
         {
+
+            //スクロール速度に合わせて移動させる
             float speed = GameManager.Instance.InitialScrollSpeed;
             float distance = Vector2.Distance(startPosition, targetPosition);
             float playerDuration = distance / speed;
 
-            // ▼ 修正：テキストの演出時間をプレイヤーの移動時間のちょうど「2倍」にする
+           
             float textDuration = playerDuration * 2.0f;
             StartCoroutine(StartTextPresentationRoutine(textDuration));
 
@@ -270,7 +316,11 @@ public class UIManager : MonoBehaviour
         }
     }
 
-    // テキスト専用の独立したアニメーションコルーチン
+    /// <summary>
+    /// ゲーム開始前にテキストが横切る演出
+    /// </summary>
+    /// <param name="textDuration">演出の効果時間</param>
+    /// <returns></returns>
     private IEnumerator StartTextPresentationRoutine(float textDuration)
     {
         float elapsed = 0f;

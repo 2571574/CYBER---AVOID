@@ -5,16 +5,17 @@
 /// </summary>
 public class BackgroundScroller2D : MonoBehaviour
 {
+    [Tooltip("ゲーム内のパラメータ")]
     [SerializeField] private GameStatus settings;
 
-    private float spriteWidth;
-    private Vector3 startPosition;
+    private float spriteWidth;      //背景の画像１枚分の横幅
+    private Vector3 startPosition;  //リセットするための初期位置
 
     private void Start()
     {
-        // 初期位置を記憶
         startPosition = transform.position;
-
+        
+        //背景のオブジェクトから画像1枚の横幅を取得
         SpriteRenderer sr = GetComponentInChildren<SpriteRenderer>();
         if(sr != null){
             spriteWidth = sr.bounds.size.x;
@@ -37,9 +38,10 @@ public class BackgroundScroller2D : MonoBehaviour
     /// <summary>
     /// ステートが変わった時に行う処理
     /// </summary>
-    /// <param name="state"></param>
+    /// <param name="state">変更後のステート</param>
     private void HandleStateChanged(GameState state)
     {
+        //タイトルかスタート直前に背景を初期位置に戻す
         if (state == GameState.Title || state == GameState.StartAnim)
         {
             transform.position = startPosition;
@@ -54,18 +56,17 @@ public class BackgroundScroller2D : MonoBehaviour
             GameManager.Instance.CurrentState != GameState.PlayerDead) return;
         if (settings == null) return;
 
-        // 障害物のスピードと同じ計算式
+        //難易度によるスクロール速度を計算
         float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
         float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
-        // 左へスクロール
+        // スクロール
         transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.GlobalScrollMultiplier * Time.deltaTime);
 
-        // 画像1枚分スクロールしたことを検知
+        // ループ処理
         if (transform.position.x <= startPosition.x - spriteWidth)
         {
-            // 移動した分だけ位置を戻す
             transform.position += new Vector3(spriteWidth, 0, 0);
         }
     }
