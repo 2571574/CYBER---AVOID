@@ -24,7 +24,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ParticleSystem groundSpark;
     [Tooltip("着地時のパーティクルシステム")]
     [SerializeField] private ParticleSystem groundImpact;
-    
+
+    [Header("Sound Settings")]
+    [Tooltip("ジャンプした時に鳴るSE")]
+    [SerializeField] private AudioClip jumpSE;
+    [Tooltip("着地した時に鳴るSE")]
+    [SerializeField] private AudioClip landSE;
+
+    private float soundCooldown = 0.05f;
+    private float lastJumpSoundTime = 0f;
+    private float lastLandSoundTime = 0f;
     private Rigidbody2D rb;
     private bool isGrounded;
     private Vector2 startPosition;
@@ -113,63 +122,81 @@ public class PlayerController : MonoBehaviour
         //接地判定
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
 
-        if(groundSpark != null)
+        if (groundSpark != null)
         {
             var emission = groundSpark.emission;
 
             emission.enabled = isGrounded;
 
-            if(isGrounded && !wasGrounded)
+            if (isGrounded && !wasGrounded)
             {
-                if(groundImpact != null)
+                if (groundImpact != null)
                 {
                     groundImpact.Play();
                 }
+
+                if (AudioManager.Instance != null && landSE != null)
+                {
+                    if (Time.time - lastLandSoundTime > soundCooldown)
+                    {
+                        AudioManager.Instance.PlaySE(landSE);
+                        lastLandSoundTime = Time.time;
+                    }
+                }
             }
-        }
 
-        if (!isGrounded && wasGrounded)
-        {
-            airRotationSpeed = -rb.velocity.x * rotationSpeed;
-        }
-
-        float targetVelocityX = inputController.HorizontalInput * settings.playerMoveSpeed;
-        float currentVelocityX = rb.velocity.x;
-        float currentAccel = isGrounded ? settings.groundAcceleration : settings.airAcceleration;
-        float currentDecel = isGrounded ? settings.groundDeceleration : settings.airDeceleration;
-        float accelRate = (Mathf.Abs(inputController.HorizontalInput) > 0.01f) ? currentAccel : currentDecel;
-        float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, accelRate * Time.fixedDeltaTime);
-        rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
-
-        Vector2 screenRange = GameManager.Instance.GetDynamicScreenRange();
-        float clampedX = Mathf.Clamp(rb.position.x, screenRange.x, screenRange.y);
-        if (rb.position.x != clampedX)
-        {
-            rb.position = new Vector2(clampedX, rb.position.y);
-            rb.velocity = new Vector2(0f, rb.velocity.y);
-        }
-
-        if (inputController.IsJumpHeld && isGrounded)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, settings.jumpForce);
-        }
-
-        if (visualTransform != null)
-        {
-            if (!isGrounded)
+            if (!isGrounded && wasGrounded)
             {
-                visualTransform.Rotate(0, 0, airRotationSpeed * Time.fixedDeltaTime);
+                airRotationSpeed = -rb.velocity.x * rotationSpeed;
             }
-            else
+
+            float targetVelocityX = inputController.HorizontalInput * settings.playerMoveSpeed;
+            float currentVelocityX = rb.velocity.x;
+            float currentAccel = isGrounded ? settings.groundAcceleration : settings.airAcceleration;
+            float currentDecel = isGrounded ? settings.groundDeceleration : settings.airDeceleration;
+            float accelRate = (Mathf.Abs(inputController.HorizontalInput) > 0.01f) ? currentAccel : currentDecel;
+            float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, accelRate * Time.fixedDeltaTime);
+            rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
+
+            Vector2 screenRange = GameManager.Instance.GetDynamicScreenRange();
+            float clampedX = Mathf.Clamp(rb.position.x, screenRange.x, screenRange.y);
+            if (rb.position.x != clampedX)
             {
-                float currentAngle = visualTransform.eulerAngles.z;
-                float targetAngle = Mathf.Round(currentAngle / 90f) * 90f;
-
-                visualTransform.rotation = Quaternion.Lerp(visualTransform.rotation, Quaternion.Euler(0, 0, targetAngle), rotationLerpSpeed * Time.fixedDeltaTime);
+                rb.position = new Vector2(clampedX, rb.position.y);
+                rb.velocity = new Vector2(0f, rb.velocity.y);
             }
-        }
 
-        wasGrounded = isGrounded;
+            if (inputController.IsJumpHeld && isGrounded)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, settings.jumpForce);
+
+                if (AudioManager.Instance != null && jumpSE != null)
+                {
+                    if (Time.time - lastJumpSoundTime > soundCooldown)
+                    {
+                        AudioManager.Instance.PlaySE(jumpSE);
+                        lastJumpSoundTime = Time.time;
+                    }
+                }
+            }
+
+            if (visualTransform != null)
+            {
+                if (!isGrounded)
+                {
+                    visualTransform.Rotate(0, 0, airRotationSpeed * Time.fixedDeltaTime);
+                }
+                else
+                {
+                    float currentAngle = visualTransform.eulerAngles.z;
+                    float targetAngle = Mathf.Round(currentAngle / 90f) * 90f;
+
+                    visualTransform.rotation = Quaternion.Lerp(visualTransform.rotation, Quaternion.Euler(0, 0, targetAngle), rotationLerpSpeed * Time.fixedDeltaTime);
+                }
+            }
+
+            wasGrounded = isGrounded;
+        }
     }
 
     private void StopSparkEffect()

@@ -5302,6 +5302,8 @@ MonoBehaviour:
   visualTransform: {fileID: 194154158}
   groundSpark: {fileID: 37502137}
   groundImpact: {fileID: 486390789}
+  jumpSE: {fileID: 8300000, guid: 010e0a0c1bf58b548bfd82ae810451dd, type: 3}
+  landSE: {fileID: 8300000, guid: 8fead424c75a05747b0d61e28cc145ee, type: 3}
 --- !u!114 &63074738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14600,7 +14602,7 @@ Transform:
   m_GameObject: {fileID: 1238879621}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 356.81287, y: 918.34045, z: -20.702682}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
