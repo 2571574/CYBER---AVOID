@@ -3,7 +3,7 @@ using TMPro;
 using System.Collections;
 
 /// <summary>
-/// 回避ボーナスの文字エフェクト
+/// 回避ボーナスのポップアップテキストを管理するクラス
 /// </summary>
 public class BonusTextEffect : MonoBehaviour
 {
@@ -32,9 +32,9 @@ public class BonusTextEffect : MonoBehaviour
     /// <summary>
     /// 文字アニメーションの再生
     /// </summary>
-    /// <returns></returns>
     private IEnumerator AnimateRoutine()
     {
+        //現在位置からmoveDistance上を目標位置とする
         Vector3 startPos = transform.localPosition;
         Vector3 endPos = startPos + new Vector3(0, moveDistance, 0);
 
@@ -47,9 +47,11 @@ public class BonusTextEffect : MonoBehaviour
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
 
+            //移動処理
             float easeOutT = 1f - Mathf.Pow(1f - t, 3f);
             transform.localPosition = Vector3.Lerp(startPos, endPos, easeOutT);
 
+            //フェード処理
             if (canvasGroup != null)
             {
                 if (t < 0.1f)

@@ -1,7 +1,8 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
+
 public class CameraAspectController : MonoBehaviour
 {
     [Header("ターゲットの画面比率 (幅, 高さ)")]
