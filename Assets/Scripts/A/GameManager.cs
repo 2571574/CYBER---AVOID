@@ -45,9 +45,13 @@ public class GameManager : MonoBehaviour
     [Tooltip("ゲームスタート位置")]
     [SerializeField] private Vector2 playerReadyPosition = new Vector2(0f, 0f);
     [Tooltip("操作するプレイヤーキャラクターのTransform")]
-    [SerializeField] private Transform playerTransform; 
+    [SerializeField] private Transform playerTransform;
 
     [Header("Sound Settings")]
+    [Tooltip("タイトルのBGM")]
+    [SerializeField] private AudioClip titleBGM;
+    [Tooltip("ゲーム中のBGM")]
+    [SerializeField] private AudioClip playBGM;
     [Tooltip("ゲームスタート時のSE")]
     [SerializeField] private AudioClip startSE;
     [Tooltip("プレイヤー死亡時のSE")]
@@ -102,8 +106,27 @@ public class GameManager : MonoBehaviour
         {
             playTimer = 0f;
             DifficultyMultiplier = 1.0f;
+            
+            if(AudioManager.Instance != null && titleBGM != null)
+            {
+                AudioManager.Instance.PlayBGM(titleBGM);
+            }
         }
-        OnStateChanged?.Invoke(newState);
+        else if(newState == GameState.StartAnim)
+        {
+            if(AudioManager.Instance != null && playBGM != null)
+            {
+                AudioManager.Instance.PlayBGM(playBGM);
+            }
+        }
+        else if(newState == GameState.PlayerDead)
+        {
+            if(AudioManager.Instance != null)
+            {
+                AudioManager.Instance.StopBGM();
+            }
+        }
+            OnStateChanged?.Invoke(newState);
     }
 
     /// <summary>

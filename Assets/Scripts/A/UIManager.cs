@@ -65,6 +65,9 @@ public class UIManager : MonoBehaviour
     [Tooltip("PlayerHealthの参照")]
     [SerializeField] private PlayerHealth playerHealth;
 
+    [Header("Sound Setting")]
+    [Tooltip("ボタンを押した時のSE")]
+    [SerializeField] private AudioClip buttonSE;
     private void Awake()
     {
         if (Instance == null)
@@ -433,22 +436,33 @@ public class UIManager : MonoBehaviour
  
     // --- ボタンメソッド ---
 
+    public void PlayButtonSE()
+    {
+        if(AudioManager.Instance != null && buttonSE != null)
+        {
+            AudioManager.Instance.PlaySE(buttonSE);
+        }
+    }
     public void OnClickStartButton()
     {
+        PlayButtonSE();
         GameManager.Instance.StartGame();
     }
 
     public void OnClickTitleButton()
     {
+        PlayButtonSE();
         GameManager.Instance.GoToTitle();
     }
 
     public void OnClickRetryButton()
     {
+        PlayButtonSE();
         GameManager.Instance.RetryGame();
     }
     public void OnClickOpenRankingButton()
     {
+        PlayButtonSE();
         UpdateTitleRankingUI();
         if (rankingPanel != null) rankingPanel.SetActive(true);
     }
@@ -460,6 +474,7 @@ public class UIManager : MonoBehaviour
 
     public void OnClickOpenGuideButton()
     {
+        PlayButtonSE();
         if (guidePanel != null) guidePanel.SetActive(true);
     }
 
