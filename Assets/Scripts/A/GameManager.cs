@@ -45,7 +45,13 @@ public class GameManager : MonoBehaviour
     [Tooltip("ゲームスタート位置")]
     [SerializeField] private Vector2 playerReadyPosition = new Vector2(0f, 0f);
     [Tooltip("操作するプレイヤーキャラクターのTransform")]
-    [SerializeField] private Transform playerTransform;
+    [SerializeField] private Transform playerTransform; 
+
+    [Header("Sound Settings")]
+    [Tooltip("ゲームスタート時のSE")]
+    [SerializeField] private AudioClip startSE;
+    [Tooltip("プレイヤー死亡時のSE")]
+    [SerializeField] private AudioClip deathSE;
 
     /// <summary>
     /// ステートが変化した時のイベント
@@ -192,6 +198,11 @@ public class GameManager : MonoBehaviour
 
         
         ChangeState(GameState.CharaReady);
+        if(AudioManager.Instance != null && startSE != null)
+        {
+            AudioManager.Instance.PlaySE(startSE);
+        }
+
         yield return StartCoroutine(UIManager.Instance.WaitTextExitRoutine());
 
         ChangeState(GameState.Playing);
@@ -204,6 +215,11 @@ public class GameManager : MonoBehaviour
         isTransitioning = true;
 
         ChangeState(GameState.PlayerDead);
+
+        if (AudioManager.Instance != null && deathSE != null)
+        {
+            AudioManager.Instance.PlaySE(deathSE);
+        }
 
         float elapsed = 0f;
         while(elapsed < deathWaitTime)

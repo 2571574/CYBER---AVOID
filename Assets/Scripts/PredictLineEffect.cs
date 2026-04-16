@@ -1,10 +1,16 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
 
 public class PredictLineEffect : MonoBehaviour
 {
     private LineRenderer lr;
+
+    [Header("Sound Settings")]
+    [Tooltip("警告音")]
+    [SerializeField] private AudioClip AlertSE;
+    [Tooltip("チャージ時間中に鳴らす回数")]
+    [SerializeField] private int count = 3;
 
     [Header("Charge Settings")]
     [Tooltip("警告色（HDRで設定するとBloomで発光します）")]
@@ -18,6 +24,7 @@ public class PredictLineEffect : MonoBehaviour
     private float currentTimer = 0f;
     private bool isCharging = false;
 
+    private int playedAlert = 0;
     private void Awake()
     {
         lr = GetComponent<LineRenderer>();
@@ -30,6 +37,7 @@ public class PredictLineEffect : MonoBehaviour
         chargeDuration = duration;
         currentTimer = 0f;
         isCharging = true;
+        playedAlert = 0;
         UpdateLine(0f); // 完全に透明・極細の初期状態からスタート
     }
 
@@ -48,6 +56,21 @@ public class PredictLineEffect : MonoBehaviour
 
         UpdateLine(easeProgress);
 
+        if (count > 0 && playedAlert < count)
+        {
+            float nextAlert = (chargeDuration / count) * playedAlert;
+
+
+            if (currentTimer > nextAlert)
+            {
+                if (AudioManager.Instance != null && AlertSE != null)
+                {
+                    AudioManager.Instance.PlaySE(AlertSE);
+                }
+                playedAlert++;
+            }
+
+        }
         if (progress >= 1f)
         {
             isCharging = false;

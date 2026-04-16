@@ -5302,7 +5302,7 @@ MonoBehaviour:
   visualTransform: {fileID: 194154158}
   groundSpark: {fileID: 37502137}
   groundImpact: {fileID: 486390789}
-  jumpSE: {fileID: 8300000, guid: 010e0a0c1bf58b548bfd82ae810451dd, type: 3}
+  jumpSE: {fileID: 8300000, guid: b5c171ce9a0b366469cfbf97e03ac093, type: 3}
   landSE: {fileID: 8300000, guid: 8fead424c75a05747b0d61e28cc145ee, type: 3}
 --- !u!114 &63074738
 MonoBehaviour:
@@ -12282,7 +12282,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -35, y: 8}
+  m_AnchoredPosition: {x: -35.000015, y: 8}
   m_SizeDelta: {x: 324454.78, y: 560527.7}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &578065290
@@ -13338,7 +13338,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1037236484
 RectTransform:
   m_ObjectHideFlags: 0
@@ -13638,7 +13638,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1058514555
 RectTransform:
   m_ObjectHideFlags: 0
