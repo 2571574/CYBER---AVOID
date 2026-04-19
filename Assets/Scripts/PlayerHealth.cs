@@ -18,9 +18,6 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private float deathShakeDuration = 0.4f;
     [SerializeField] private float deathShakeMagnitude = 0.25f;
 
-    [Header("Sound Settings")]
-    [Tooltip("被弾時のSE")]
-    [SerializeField] private AudioClip damageSE;
     public int CurrentHealth { get; private set; }
     private bool isInvincible = false;
     public bool IsInvincible => isInvincible;
@@ -115,9 +112,9 @@ public class PlayerHealth : MonoBehaviour
         }
         else
         {
-            if (AudioManager.Instance != null && damageSE != null) 
+            if (AudioManager.Instance != null) 
             {
-                AudioManager.Instance.PlaySE(damageSE);
+                AudioManager.Instance.PlaySE(SEType.Damage);
             }
             if (EffectManager.Instance != null)
                 EffectManager.Instance.PlayDamageEffect(transform.position);

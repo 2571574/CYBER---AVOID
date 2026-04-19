@@ -1,7 +1,8 @@
 ﻿using TMPro;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI; 
+using UnityEngine.UI;
+using System.Threading.Tasks;
 
 /// <summary>
 /// ゲーム内全てのUIを管理するクラス
@@ -19,6 +20,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject rankingPanel;
     [Tooltip("ガイド画面のパネル")]
     [SerializeField] private GameObject guidePanel;
+    [Tooltip("クレジット画面のパネル")]
+    [SerializeField] private GameObject creditsPanel;
 
     [Tooltip("プレイ中HUDのパネル")]
     [SerializeField] private GameObject hudPanel;
@@ -30,6 +33,8 @@ public class UIManager : MonoBehaviour
     [SerializeField] private CanvasGroup touchInputPanelGroup;
 
     [Header("HUD Elements")]
+    [Tooltip("名前入力用のインプットフィールド")]
+    [SerializeField] private TMP_InputField nameInputField;
     [Tooltip("スコアを表示させるテキスト")]
     [SerializeField] private TextMeshProUGUI scoreText;
     [Tooltip("体力を表示させる画像の配列")]
@@ -42,18 +47,19 @@ public class UIManager : MonoBehaviour
     [SerializeField] private GameObject bonusTextPrefab;
     [Tooltip("ボーナステキストの生成位置")]
     [SerializeField] private Transform bonusTextSpawnPoint;
-
-    [Header("GameOver Elements")]
-    [Tooltip("スコアを表示させるテキスト")]
+    [Header("Result Elements")]
+    [Tooltip("ゲームオーバー画面で今回のスコアを表示するテキスト")]
     [SerializeField] private TextMeshProUGUI resultScoreText;
 
     [Header("Ranking Elements")]
     [Tooltip("タイトルでランキングを一覧で並べるオブジェクト")]
     [SerializeField] private Transform titleRankingContent;
+    [Tooltip("ゲームオーバーでランキングを一覧で並べるオブジェクト")]
+    [SerializeField] private Transform gameOverRankingContent;
+    [Tooltip("ランキング表示エリアの透明度を管理するCanvasGroup")]
+    [SerializeField] private CanvasGroup rankingCanvasGroup;
     [Tooltip("1順位ずつ表示させるためのテキストのプレハブ")]
     [SerializeField] private GameObject rankingTextPrefab;
-    [Tooltip("順位テキストの配列")]
-    [SerializeField] private TextMeshProUGUI[] gameOverRankingTexts;
 
     [Header("Transition Elements")]
     [Tooltip("フェード用の黒いパネルのCanvasGroup")]
@@ -95,6 +101,7 @@ public class UIManager : MonoBehaviour
 
         if (rankingPanel != null) rankingPanel.SetActive(false);
         if (guidePanel != null) guidePanel.SetActive(false);
+        if (creditsPanel != null) creditsPanel.SetActive(false);
     }
 
     private void Update()
@@ -155,17 +162,36 @@ public class UIManager : MonoBehaviour
         if (state == GameState.GameOver)
         {
             int finalScore = Mathf.FloorToInt(ScoreManager.Instance.CurrentScore);
-            if (resultScoreText != null) resultScoreText.text = "SCORE: " + finalScore.ToString();
 
-            if (RankingManager.Instance != null)
+            if (resultScoreText != null)
             {
-                RankingManager.Instance.AddScoreAndSave(finalScore);
+                resultScoreText.text = "SCORE: " + finalScore.ToString();
             }
-
-            UpdateGameOverRankingUI();
+            SubmitAndFetchRankingAsync(finalScore);
         }
     }
 
+    private async void SubmitAndFetchRankingAsync(int finalScore)
+    {
+        if (RankingManager.Instance != null)
+        {
+            ShowMessageInRankingUI(gameOverRankingContent, "LOADING...");
+
+            // 1. スコアを送信して完了を待つ
+            await RankingManager.Instance.AddScoreAndSaveAsync(finalScore);
+
+            // 2. サーバーでの集計ラグのために1秒待つ
+            await Task.Delay(1000);
+            if (this == null || GameManager.Instance.CurrentState != GameState.GameOver) return;
+
+            // 3. 最新のランキングを取得する
+            bool isSuccess = await RankingManager.Instance.FetchRankingAsync();
+            if (this == null || GameManager.Instance.CurrentState != GameState.GameOver) return;
+
+            // 4. ゲームオーバー画面のUIを更新する
+            UpdateGameOverRankingUI(!isSuccess);
+        }
+    }
 
     /// <summary>
     /// 体力が変化したとき、体力のアイコンを切り替える
@@ -190,60 +216,51 @@ public class UIManager : MonoBehaviour
     }
 
     //ランキングの更新
-
-    /// <summary>
-    /// タイトル画面のランキングUIを更新する
-    /// </summary>
-    private void UpdateTitleRankingUI()
+    private void GenerateRankingUI(Transform targetContent, bool isOffline = false)
     {
-        if (RankingManager.Instance == null || titleRankingContent == null || rankingTextPrefab == null) return;
+        if (targetContent == null || rankingTextPrefab == null) return;
 
         // 既存のリストをクリア
-        foreach (Transform child in titleRankingContent)
+        foreach (Transform child in targetContent)
         {
+            child.gameObject.SetActive(false);
             Destroy(child.gameObject);
         }
 
-        var highScores = RankingManager.Instance.CurrentRanking.highScores;
-
-        //スコアが一つもない場合の表示
-        if (highScores.Count == 0)
+        if (isOffline)
         {
-            GameObject obj = Instantiate(rankingTextPrefab, titleRankingContent);
+            GameObject obj = Instantiate(rankingTextPrefab, targetContent);
+            obj.GetComponent<TextMeshProUGUI>().text = "OFFLINE";
+            return;
+        }
+
+        var rankData = RankingManager.Instance.CurrentRanking;
+
+        if (rankData.Count == 0)
+        {
+            GameObject obj = Instantiate(rankingTextPrefab, targetContent);
             obj.GetComponent<TextMeshProUGUI>().text = "NO RECORD";
             return;
         }
 
-        //スコアが高い順に生成して表示
-        for (int i = 0; i < highScores.Count; i++)
+        for (int i = 0; i < rankData.Count; i++)
         {
-            GameObject obj = Instantiate(rankingTextPrefab, titleRankingContent);
-            obj.GetComponent<TextMeshProUGUI>().text = $"{i + 1}. {highScores[i]}";
+            GameObject obj = Instantiate(rankingTextPrefab, targetContent);
+            string rankNum = (i < 9) ? $"<color=#00000000>0</color>{i + 1}" : $"{i + 1}";
+            obj.GetComponent<TextMeshProUGUI>().text = $"{rankNum}.<space=0.5em>{rankData[i].PlayerName} <pos=375>:<space=0.5em>{rankData[i].Score}";
         }
     }
-
     /// <summary>
-    /// ゲームオーバー画面のランキングを更新する
+    /// タイトル画面のランキングUIを更新する
     /// </summary>
-    private void UpdateGameOverRankingUI()
+    private void UpdateTitleRankingUI(bool isOffline = false)
     {
-        if (RankingManager.Instance == null || gameOverRankingTexts == null || gameOverRankingTexts.Length == 0) return;
+        GenerateRankingUI(titleRankingContent, isOffline);
+    }
 
-        var highScores = RankingManager.Instance.CurrentRanking.highScores;
-
-        //あらかじめ配置されたテキストを使いまわす
-        for (int i = 0; i < gameOverRankingTexts.Length; i++)
-        {
-            if (i < highScores.Count)
-            {
-                gameOverRankingTexts[i].text = $"{i + 1}. {highScores[i]}";
-                gameOverRankingTexts[i].gameObject.SetActive(true);
-            }
-            else
-            {
-                gameOverRankingTexts[i].gameObject.SetActive(false);
-            }
-        }
+    private void UpdateGameOverRankingUI(bool isOffline = false)
+    {
+        GenerateRankingUI(gameOverRankingContent, isOffline);
     }
 
     /// <summary>
@@ -344,6 +361,10 @@ public class UIManager : MonoBehaviour
         if (startPresentationText != null)
         {
             startPresentationText.gameObject.SetActive(true);
+            if (AudioManager.Instance != null)
+            {
+                AudioManager.Instance.PlaySE(SEType.Start);
+            }
             Color initialColor = startPresentationText.color;
             initialColor.a = 1f;
             startPresentationText.color = initialColor;
@@ -432,54 +453,103 @@ public class UIManager : MonoBehaviour
         {
             effect.PlayEffect(scoreValue);
         }
-    } 
- 
-    // --- ボタンメソッド ---
+    }
 
-    public void PlayButtonSE()
+    /// <summary>
+    /// ランキングUIに任意のメッセージ（LOADING...など）を1行だけ表示し、古いリストをクリアする
+    /// </summary>
+    private void ShowMessageInRankingUI(Transform targetContent, string message)
     {
-        if(AudioManager.Instance != null && buttonSE != null)
+        if (targetContent == null || rankingTextPrefab == null) return;
+
+        // 既存のリストをクリア
+        foreach (Transform child in targetContent)
         {
-            AudioManager.Instance.PlaySE(buttonSE);
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+
+        // メッセージを表示
+        GameObject obj = Instantiate(rankingTextPrefab, targetContent);
+        obj.GetComponent<TextMeshProUGUI>().text = message;
+    }
+    // --- ボタンメソッド ---
+    private async Task PrepareAndStartSessionAsync()
+    {
+        if (RankingManager.Instance != null && nameInputField != null)
+        {
+            // アカウントを作り直し、名前を再登録する（これで毎回別人として扱われます）
+            await RankingManager.Instance.ResetPlayerSessionAsync();
+            string playerName = nameInputField.text;
+            await RankingManager.Instance.UpdatePlayerNameAsync(playerName);
         }
     }
-    public void OnClickStartButton()
+    public async void OnClickStartButton()
     {
-        PlayButtonSE();
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySE(SEType.Button);
+        await PrepareAndStartSessionAsync();
         GameManager.Instance.StartGame();
     }
 
     public void OnClickTitleButton()
     {
-        PlayButtonSE();
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySE(SEType.Button);
         GameManager.Instance.GoToTitle();
     }
 
-    public void OnClickRetryButton()
+    public async void OnClickRetryButton()
     {
-        PlayButtonSE();
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySE(SEType.Button);
+        await PrepareAndStartSessionAsync();
         GameManager.Instance.RetryGame();
     }
-    public void OnClickOpenRankingButton()
+    public async void OnClickOpenRankingButton()
     {
-        PlayButtonSE();
-        UpdateTitleRankingUI();
-        if (rankingPanel != null) rankingPanel.SetActive(true);
+        if (AudioManager.Instance != null)
+            AudioManager.Instance.PlaySE(SEType.UIOpen);
+        if (RankingManager.Instance != null)
+        {
+            if (rankingPanel != null) rankingPanel.SetActive(true);
+            ShowMessageInRankingUI(titleRankingContent, "LOADING...");
+            await RankingManager.Instance.FetchRankingAsync();
+            UpdateTitleRankingUI();
+        }
     }
 
     public void OnClickCloseRankingButton()
     {
+        if (AudioManager.Instance != null)
+                AudioManager.Instance.PlaySE(SEType.UIClose);
         if (rankingPanel != null) rankingPanel.SetActive(false);
     }
 
     public void OnClickOpenGuideButton()
     {
-        PlayButtonSE();
+        if (AudioManager.Instance != null)
+                AudioManager.Instance.PlaySE(SEType.UIOpen);
         if (guidePanel != null) guidePanel.SetActive(true);
     }
 
     public void OnClickCloseGuideButton()
     {
+        if (AudioManager.Instance != null)
+                AudioManager.Instance.PlaySE(SEType.UIClose);
         if (guidePanel != null) guidePanel.SetActive(false);
+    }
+    public void OnClickOpenCreditsButton()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySE(SEType.UIOpen);
+
+        if (creditsPanel != null) creditsPanel.SetActive(true);
+    }
+
+    public void OnClickCloseCreditsButton()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlaySE(SEType.UIClose);
+
+        if (creditsPanel != null) creditsPanel.SetActive(false);
     }
 }

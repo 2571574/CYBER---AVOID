@@ -25,15 +25,8 @@ public class PlayerController : MonoBehaviour
     [Tooltip("着地時のパーティクルシステム")]
     [SerializeField] private ParticleSystem groundImpact;
 
-    [Header("Sound Settings")]
-    [Tooltip("ジャンプした時に鳴るSE")]
-    [SerializeField] private AudioClip jumpSE;
-    [Tooltip("着地した時に鳴るSE")]
-    [SerializeField] private AudioClip landSE;
-
     private float soundCooldown = 0.05f;
     private float lastJumpSoundTime = 0f;
-    private float lastLandSoundTime = 0f;
     private Rigidbody2D rb;
     private bool isGrounded;
     private Vector2 startPosition;
@@ -134,15 +127,6 @@ public class PlayerController : MonoBehaviour
                 {
                     groundImpact.Play();
                 }
-
-                if (AudioManager.Instance != null && landSE != null)
-                {
-                    if (Time.time - lastLandSoundTime > soundCooldown)
-                    {
-                        AudioManager.Instance.PlaySE(landSE);
-                        lastLandSoundTime = Time.time;
-                    }
-                }
             }
 
             if (!isGrounded && wasGrounded)
@@ -170,11 +154,11 @@ public class PlayerController : MonoBehaviour
             {
                 rb.velocity = new Vector2(rb.velocity.x, settings.jumpForce);
 
-                if (AudioManager.Instance != null && jumpSE != null)
+                if (AudioManager.Instance != null)
                 {
                     if (Time.time - lastJumpSoundTime > soundCooldown)
                     {
-                        AudioManager.Instance.PlaySE(jumpSE);
+                        AudioManager.Instance.PlaySE(SEType.Jump);
                         lastJumpSoundTime = Time.time;
                     }
                 }

@@ -1,79 +1,150 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
-
-// JSONで保存するためのデータ構造（構造体）
-[System.Serializable]
-public class RankingData
-{
-    // トップ5のスコアを保存するリスト
-    public List<int> highScores = new List<int>();
-}
+using Unity.Services.Core;
+using Unity.Services.Authentication;
+using Unity.Services.Leaderboards;
+using Unity.Services.Core.Environments;
 
 public class RankingManager : MonoBehaviour
 {
     public static RankingManager Instance { get; private set; }
 
-    private const string RANKING_KEY = "LocalRankingData";
-    private const int MAX_RANKING_COUNT = 30; // 上位何名まで保存するか
+    // UGSのDashboardで設定したリーダーボードのIDをここに入力します
+    private const string LEADERBOARD_ID = "SCORE_RANKING";
 
-    public RankingData CurrentRanking { get; private set; }
+    // スコアと名前をセットで保持する専用の構造体
+    public struct ScoreData
+    {
+        public string PlayerName;
+        public int Score;
+    }
+
+    // 取得したランキングデータを保持するリスト
+    public List<ScoreData> CurrentRanking { get; private set; } = new List<ScoreData>();
+
+    public bool IsPlayerNameSet { get; private set; } = false;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
-
-        LoadRanking();
     }
 
-    // 起動時にローカルからランキングを読み込む
-    private void LoadRanking()
+    private async void Start()
     {
-        if (PlayerPrefs.HasKey(RANKING_KEY))
-        {
-            string json = PlayerPrefs.GetString(RANKING_KEY);
-            CurrentRanking = JsonUtility.FromJson<RankingData>(json);
-        }
-        else
-        {
-            CurrentRanking = new RankingData();
-        }
+        await InitializeUGSAsync();
     }
 
-    // ゲームオーバー時にスコアを保存し、ランクインしていればインデックスで返す
-    public int AddScoreAndSave(int newScore)
+    private async Task InitializeUGSAsync()
     {
-        if (newScore <= 0) return -1;
-
-        int rankIndex = -1;
-
-        for (int i = 0; i < CurrentRanking.highScores.Count; i++)
+        try
         {
-            if (newScore > CurrentRanking.highScores[i])
+            if (UnityServices.State == ServicesInitializationState.Initialized)
             {
-                rankIndex = i;
-                break;
+                return;
+            }
+
+            var options = new InitializationOptions();
+            options.SetEnvironmentName("production");
+
+            await UnityServices.InitializeAsync(options);
+
+            if (!AuthenticationService.Instance.IsSignedIn)
+            {
+                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                Debug.Log("サーバーへログイン成功: " + AuthenticationService.Instance.PlayerId);
             }
         }
-
-        if (rankIndex == -1 && CurrentRanking.highScores.Count < MAX_RANKING_COUNT)
+        catch (System.Exception e)
         {
-            rankIndex = CurrentRanking.highScores.Count;
+            Debug.LogError("初期化エラー: " + e);
+        }
+    }
+
+    public async Task ResetPlayerSessionAsync()
+    {
+        if (UnityServices.State != ServicesInitializationState.Initialized) return;
+        try
+        {
+            IsPlayerNameSet = false;
+
+            if (AuthenticationService.Instance.IsSignedIn)
+            {
+                AuthenticationService.Instance.SignOut();
+                AuthenticationService.Instance.ClearSessionToken();
+            }
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+        }
+        catch (System.Exception e) { Debug.LogError("リセットエラー: " + e); }
+    }
+
+    // プレイヤー名をサーバーに登録・更新する
+    public async Task UpdatePlayerNameAsync(string playerName)
+    {
+        if (UnityServices.State != ServicesInitializationState.Initialized) return;
+
+        if (string.IsNullOrEmpty(playerName)) playerName = "player";
+
+        try
+        {
+            await AuthenticationService.Instance.UpdatePlayerNameAsync(playerName);
+            IsPlayerNameSet = true;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("名前更新エラー: " + e);
+        }
+    }
+
+    // スコアを送信する（UIManagerのGameOver処理から呼ばれる）
+    public async Task AddScoreAndSaveAsync(int score)
+    {
+        if (!IsPlayerNameSet)
+        {
+            Debug.LogWarning("名前の登録が未完了のため、スコアの送信をスキップしました。");
+            return;
         }
 
-        if (rankIndex == -1) return -1;
-
-        CurrentRanking.highScores.Insert(rankIndex, newScore);
-
-        if (CurrentRanking.highScores.Count > MAX_RANKING_COUNT)
+        try
         {
-            CurrentRanking.highScores.RemoveAt(CurrentRanking.highScores.Count - 1);
+            await LeaderboardsService.Instance.AddPlayerScoreAsync(LEADERBOARD_ID, score);
+            Debug.Log("スコア送信完了: " + score);
         }
+        catch (System.Exception e)
+        {
+            Debug.LogError("スコア送信エラー: " + e);
+        }
+    }
 
-        string json = JsonUtility.ToJson(CurrentRanking);
-        PlayerPrefs.SetString(RANKING_KEY, json);
-        PlayerPrefs.Save();
+    // サーバーからランキングを取得する
+    public async Task<bool> FetchRankingAsync()
+    {
+        try
+        {
+            var options = new GetScoresOptions { Limit = 40 };
+            // 上位のデータを取得
+            var response = await LeaderboardsService.Instance.GetScoresAsync(LEADERBOARD_ID, options);
 
-        return rankIndex;
+            CurrentRanking.Clear();
+            foreach (var entry in response.Results)
+            {
+                // UGSの仕様上、名前に「#数字」のIDが付与されるため、表示用にカットする
+                string name = string.IsNullOrEmpty(entry.PlayerName) ? "Anonymous" : entry.PlayerName;
+                if (name.Contains("#")) name = name.Split('#')[0];
+
+                CurrentRanking.Add(new ScoreData
+                {
+                    PlayerName = name,
+                    Score = (int)entry.Score
+                });
+            }
+            return true;
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("ランキング取得エラー: " + e);
+            return false;
+        }
     }
 }

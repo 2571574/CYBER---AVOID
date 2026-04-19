@@ -7,8 +7,6 @@ public class PredictLineEffect : MonoBehaviour
     private LineRenderer lr;
 
     [Header("Sound Settings")]
-    [Tooltip("警告音")]
-    [SerializeField] private AudioClip alertSE;
     [Tooltip("チャージ時間中に鳴らす回数")]
     [SerializeField] private int count = 3;
 
@@ -63,9 +61,9 @@ public class PredictLineEffect : MonoBehaviour
 
             if (currentTimer > nextAlert)
             {
-                if (AudioManager.Instance != null && alertSE != null)
+                if (AudioManager.Instance != null)
                 {
-                    AudioManager.Instance.PlaySE(alertSE);
+                    AudioManager.Instance.PlaySE(SEType.Alert);
                 }
                 playedAlert++;
             }

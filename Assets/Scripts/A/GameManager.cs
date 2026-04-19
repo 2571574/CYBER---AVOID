@@ -47,16 +47,6 @@ public class GameManager : MonoBehaviour
     [Tooltip("操作するプレイヤーキャラクターのTransform")]
     [SerializeField] private Transform playerTransform;
 
-    [Header("Sound Settings")]
-    [Tooltip("タイトルのBGM")]
-    [SerializeField] private AudioClip titleBGM;
-    [Tooltip("ゲーム中のBGM")]
-    [SerializeField] private AudioClip playBGM;
-    [Tooltip("ゲームスタート時のSE")]
-    [SerializeField] private AudioClip startSE;
-    [Tooltip("プレイヤー死亡時のSE")]
-    [SerializeField] private AudioClip deathSE;
-
     /// <summary>
     /// ステートが変化した時のイベント
     /// </summary>
@@ -107,16 +97,16 @@ public class GameManager : MonoBehaviour
             playTimer = 0f;
             DifficultyMultiplier = 1.0f;
             
-            if(AudioManager.Instance != null && titleBGM != null)
+            if(AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayBGM(titleBGM);
+                AudioManager.Instance.PlayBGM(BGMType.Title);
             }
         }
         else if(newState == GameState.StartAnim)
         {
-            if(AudioManager.Instance != null && playBGM != null)
+            if(AudioManager.Instance != null)
             {
-                AudioManager.Instance.PlayBGM(playBGM);
+                AudioManager.Instance.PlayBGM(BGMType.Play);
             }
         }
         else if(newState == GameState.PlayerDead)
@@ -221,10 +211,6 @@ public class GameManager : MonoBehaviour
 
         
         ChangeState(GameState.CharaReady);
-        if(AudioManager.Instance != null && startSE != null)
-        {
-            AudioManager.Instance.PlaySE(startSE);
-        }
 
         yield return StartCoroutine(UIManager.Instance.WaitTextExitRoutine());
 
@@ -239,9 +225,9 @@ public class GameManager : MonoBehaviour
 
         ChangeState(GameState.PlayerDead);
 
-        if (AudioManager.Instance != null && deathSE != null)
+        if (AudioManager.Instance != null)
         {
-            AudioManager.Instance.PlaySE(deathSE);
+            AudioManager.Instance.PlaySE(SEType.Death);
         }
 
         float elapsed = 0f;

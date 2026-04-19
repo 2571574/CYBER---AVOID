@@ -5,10 +5,6 @@ using UnityEngine;
 public class DetectDodge : MonoBehaviour
 {
 
-    [Header("Sound Settings")]
-    [Tooltip("ボーナス時のSE")]
-    [SerializeField] private AudioClip dodgeSE;
-
     // 既にボーナスを獲得した弾のコライダーを記憶し、多重加算を防ぐ
     private HashSet<Collider2D> dodgedBullets = new HashSet<Collider2D>();
     private PlayerHealth playerHealth;
@@ -66,9 +62,9 @@ public class DetectDodge : MonoBehaviour
                     bullet.isDodged = true;
 
                     if (ScoreManager.Instance != null) ScoreManager.Instance.AddDodgeBonus();
-                    if (AudioManager.Instance != null && dodgeSE != null)
+                    if (AudioManager.Instance != null)
                     {
-                        AudioManager.Instance.PlaySE(dodgeSE);
+                        AudioManager.Instance.PlaySE(SEType.Dodge);
                     }
                     if (EffectManager.Instance != null && playerHealth != null)
                     {
