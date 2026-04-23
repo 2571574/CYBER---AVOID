@@ -93,19 +93,25 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ダメージを受けた時の処理
+    /// </summary>
     private void TakeDamage()
     {
+        //HPを減らす
         CurrentHealth--;
         OnHealthChanged?.Invoke(CurrentHealth);
 
         UpdateShaderDamageRatio();
 
+        //被弾により死亡した場合
         if (CurrentHealth <= 0)
         {
             CurrentHealth = 0;
             gameObject.SetActive(false);
             OnPlayerDeadEvent?.Invoke(transform.position, deathShakeDuration, deathShakeMagnitude);
         }
+        //被弾時
         else
         {
             if (hitEffectCoroutine != null) StopCoroutine(hitEffectCoroutine);
