@@ -1,19 +1,14 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class ScoreManager : MonoBehaviour
 {
-    public static ScoreManager Instance { get; private set; }
 
     [SerializeField] private GameStatus settings;
 
     // 現在のスコア（内部的には正確な計算のためにfloatを使用し、表示時にintにします）
     public float CurrentScore { get; private set; }
-
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
+    public event Action<float> OnScoreUpdated;
 
     private void OnEnable()
     {
@@ -47,20 +42,19 @@ public class ScoreManager : MonoBehaviour
         if (settings != null)
         {
             CurrentScore += settings.scorePerSecond * Time.deltaTime;
+            OnScoreUpdated?.Invoke(CurrentScore);
         }
     }
 
     // ギリギリで回避した時などに外部から呼び出すメソッド（後で弾の処理に組み込みます）
-    public void AddDodgeBonus()
+    public int AddDodgeBonus()
     {
         if (settings != null && GameManager.Instance.CurrentState == GameState.Playing)
         {
             CurrentScore += settings.dodgeBonusScore;
-            Debug.Log("ボーナス獲得！");
-
-            if (UIManager.Instance != null) {
-                UIManager.Instance.ShowBonusText(Mathf.FloorToInt(settings.dodgeBonusScore));
-            }
+            OnScoreUpdated?.Invoke(CurrentScore);
+            return Mathf.FloorToInt(settings.dodgeBonusScore);
         }
+        return 0;
     }
 }

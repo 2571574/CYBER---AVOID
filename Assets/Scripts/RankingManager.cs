@@ -8,7 +8,6 @@ using Unity.Services.Core.Environments;
 
 public class RankingManager : MonoBehaviour
 {
-    public static RankingManager Instance { get; private set; }
 
     // UGSのDashboardで設定したリーダーボードのIDをここに入力します
     private const string LEADERBOARD_ID = "SCORE_RANKING";
@@ -24,12 +23,6 @@ public class RankingManager : MonoBehaviour
     public List<ScoreData> CurrentRanking { get; private set; } = new List<ScoreData>();
 
     public bool IsPlayerNameSet { get; private set; } = false;
-
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
 
     private async void Start()
     {

@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
+using UnityEngine.Pool;
 
 public class EffectManager : MonoBehaviour
 {
-    public static EffectManager Instance { get; private set; }
 
     [Header("Effect Prefabs")]
     [Tooltip("被弾時に再生するパーティクルプレハブを紐付けてください")]
@@ -12,31 +12,68 @@ public class EffectManager : MonoBehaviour
     [Tooltip("ボーナス獲得時に再生するパーティクルプレハブを紐付けてください")]
     [SerializeField] private GameObject scoreEffectPrefab;
 
+    private ObjectPool<GameObject> damagePool;
+    private ObjectPool<GameObject> deathPool;
+    private ObjectPool<GameObject> scorePool;
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        damagePool = CreatePool(damageEffectPrefab);
+        deathPool = CreatePool(deathEffectPrefab);
+        scorePool = CreatePool(scoreEffectPrefab);
     }
 
-    public void PlayEffect(GameObject prefab, Vector3 position)
+    private ObjectPool<GameObject> CreatePool(GameObject prefab)
     {
-        if (prefab == null) return;
-        Instantiate(prefab, position, Quaternion.identity);
+        return new ObjectPool<GameObject>(
+            createFunc: () => {
+                GameObject obj = Instantiate(prefab);
+                obj.AddComponent<PoolableObject>();
+                return obj;
+            },
+            actionOnGet: (obj) => obj.SetActive(true),
+            actionOnRelease: (obj) => obj.SetActive(false),
+            actionOnDestroy: (obj) => Destroy(obj),
+            collectionCheck: false,
+            defaultCapacity: 10,
+            maxSize: 30
+        );
+    }
+
+    public void PlayEffect(ObjectPool<GameObject> pool, Vector3 position)
+    {
+        if (pool == null) return;
+
+        GameObject effectObj = pool.Get();
+        effectObj.transform.position = position;
+
+        PoolableObject poolable = effectObj.GetComponent<PoolableObject>();
+        poolable.Initialize(pool);
+
+        ParticleSystem ps = effectObj.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            ps.Play();
+            float duration = ps.main.duration + ps.main.startDelay.constantMax;
+
+            poolable.ReleaseAfter(duration);
+        }
+        else
+        {
+            poolable.ReleaseAfter(3.0f);
+        }
+
     }
 
     public void PlayDamageEffect(Vector3 position)
     {
-        PlayEffect(damageEffectPrefab, position);
+        PlayEffect(damagePool, position);
     }
-
-    // 死亡時用のショートカット関数を追加
     public void PlayDeathEffect(Vector3 position)
     {
-        PlayEffect(deathEffectPrefab, position);
+        PlayEffect(deathPool, position);
     }
-
     public void PlayScoreEffect(Vector3 position)
     {
-        PlayEffect(scoreEffectPrefab, position);
+        PlayEffect(scorePool, position);
     }
 }

@@ -16,12 +16,12 @@ public class ScrollingObject : MonoBehaviour
             GameManager.Instance.CurrentState != GameState.PlayerDead) return;
         if (settings == null) return;
 
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+        float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
 
         float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
-        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.GlobalScrollMultiplier * Time.deltaTime);
+        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.Level.GlobalScrollMultiplier * Time.deltaTime);
 
         if (transform.position.x < -15f)
         {

@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class CameraAspectController : MonoBehaviour
 {
+    public static CameraAspectController Instance { get; private set; }
     [Header("ターゲットの画面比率 (幅, 高さ)")]
     public Vector2 targetAspect = new Vector2(9, 16);
 
@@ -12,6 +13,13 @@ public class CameraAspectController : MonoBehaviour
 
     private int lastScreenWidth;
     private int lastScreenHeight;
+
+    private void Awake()
+    {
+        // シングルトンの初期化
+        if (Instance == null) Instance = this;
+        else Destroy(gameObject);
+    }
 
     void Start()
     {
@@ -65,5 +73,15 @@ public class CameraAspectController : MonoBehaviour
             rect.y = 0;
             cam.rect = rect;
         }
+    }
+
+    public Vector2 GetDynamicScreenRange()
+    {
+        if (cam != null)
+        {
+            float halfWidth = cam.orthographicSize * cam.aspect;
+            return new Vector2(-halfWidth + 0.15f, halfWidth - 0.15f);
+        }
+        return new Vector2(-2.8f, 2.8f);
     }
 }

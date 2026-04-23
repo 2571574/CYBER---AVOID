@@ -44,8 +44,6 @@ public class SEData
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
-
     [Header("Audio Sources")]
     [SerializeField] private AudioSource bgmSource;
     [SerializeField] private AudioSource seSource;
@@ -55,12 +53,6 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private BGMData[] bgmDataList;
     [Tooltip("SEのリストをここに登録します")]
     [SerializeField] private SEData[] seDataList;
-
-    private void Awake()
-    {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-    }
 
     /// <summary>
     /// BGMTypeを指定してBGMを再生する

@@ -57,12 +57,12 @@ public class BackgroundScroller2D : MonoBehaviour
         if (settings == null) return;
 
         //難易度によるスクロール速度を計算
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+        float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
         float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed);
 
         // スクロール
-        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.GlobalScrollMultiplier * Time.deltaTime);
+        transform.Translate(Vector3.left * currentSpeed * GameManager.Instance.Level.GlobalScrollMultiplier * Time.deltaTime);
 
         // ループ処理
         if (transform.position.x <= startPosition.x - spriteWidth)

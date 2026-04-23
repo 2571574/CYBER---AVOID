@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -17,6 +18,8 @@ public class BulletSpawner : MonoBehaviour
     [SerializeField] private Transform bulletSpawnArea;
 
     private float bulletTimer;
+
+    public event Action OnBulletAlert;
 
     // プールの定義
     private ObjectPool<GameObject> bulletPool;
@@ -85,14 +88,14 @@ public class BulletSpawner : MonoBehaviour
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
 
         bulletTimer += Time.deltaTime;
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+        float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
         float calculatedInterval = settings.baseBulletSpawnInterval / (1.0f + difficultyRise * settings.bulletIntervalWeight);
         float currentInterval = Mathf.Max(calculatedInterval, settings.minBulletSpawnInterval);
 
         if (bulletTimer >= currentInterval)
         {
             StartCoroutine(SpawnBulletRoutine(true));
-            if (Random.value > 0.5f) StartCoroutine(SpawnBulletRoutine(false));
+            if (UnityEngine.Random.value > 0.5f) StartCoroutine(SpawnBulletRoutine(false));
             bulletTimer = 0;
         }
     }
@@ -105,7 +108,7 @@ public class BulletSpawner : MonoBehaviour
     private IEnumerator SpawnBulletRoutine(bool isPredictive)
     {
         //難易度による落下速度の計算
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+        float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
         float calculatedSpeed = settings.baseBulletFallSpeed * (1.0f + difficultyRise * settings.bulletSpeedWeight);
         float currentSpeed = Mathf.Min(calculatedSpeed, settings.maxBulletFallSpeed);
 
@@ -115,7 +118,7 @@ public class BulletSpawner : MonoBehaviour
 
         float ySpawn = bulletSpawnArea.position.y;
         float targetX = 0f;
-        Vector2 screenRange = GameManager.Instance.GetDynamicScreenRange();
+        Vector2 screenRange = CameraAspectController.Instance.GetDynamicScreenRange();
 
         if (isPredictive)
         {
@@ -126,7 +129,7 @@ public class BulletSpawner : MonoBehaviour
         }
         else
         {
-            targetX = Random.Range(screenRange.x, screenRange.y);
+            targetX = UnityEngine.Random.Range(screenRange.x, screenRange.y);
         }
 
         Vector3 spawnPos = new Vector3(targetX, ySpawn, 0);
@@ -147,10 +150,20 @@ public class BulletSpawner : MonoBehaviour
         PredictLineEffect warningEffect = preLineObj.GetComponent<PredictLineEffect>();
         if (warningEffect != null)
         {
-            warningEffect.StartCharge(currentWarningTime);
-        }
+            void RelayAlert() => OnBulletAlert?.Invoke();
 
-        yield return new WaitForSeconds(currentWarningTime);
+            warningEffect.OnAlertTriggered += RelayAlert;
+            warningEffect.StartCharge(currentWarningTime);
+
+            // 指定時間待機
+            yield return new WaitForSeconds(currentWarningTime);
+
+            warningEffect.OnAlertTriggered -= RelayAlert;
+        }
+        else
+        {
+            yield return new WaitForSeconds(currentWarningTime);
+        }
 
         // 待機中にゲームオーバーやタイトルに戻っていた場合の安全対策
         if (preLineObj.activeSelf) preLineObj.GetComponent<PoolableObject>().ReleaseToPool();

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
 
@@ -21,8 +22,10 @@ public class PredictLineEffect : MonoBehaviour
     private float chargeDuration = 1f;
     private float currentTimer = 0f;
     private bool isCharging = false;
-
     private int playedAlert = 0;
+
+    public event Action OnAlertTriggered;
+
     private void Awake()
     {
         lr = GetComponent<LineRenderer>();
@@ -61,10 +64,7 @@ public class PredictLineEffect : MonoBehaviour
 
             if (currentTimer > nextAlert)
             {
-                if (AudioManager.Instance != null)
-                {
-                    AudioManager.Instance.PlaySE(SEType.Alert);
-                }
+                OnAlertTriggered?.Invoke();
                 playedAlert++;
             }
 

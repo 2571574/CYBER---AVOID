@@ -1,16 +1,14 @@
 ﻿using TMPro;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Threading.Tasks;
 
 /// <summary>
 /// ゲーム内全てのUIを管理するクラス
 /// </summary>
 public class UIManager : MonoBehaviour
 {
-    public static UIManager Instance { get; private set; }
-
     [Header("UI Panels")]
     [Tooltip("タイトル画面のパネル")]
     [SerializeField] private GameObject titlePanel;
@@ -74,18 +72,12 @@ public class UIManager : MonoBehaviour
     [Header("Sound Setting")]
     [Tooltip("ボタンを押した時のSE")]
     [SerializeField] private AudioClip buttonSE;
-    private void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
 
+    public event Action<string> OnStartRequested;
+    public event Action<string> OnRetryRequested;
+    public event Action OnTitleRequested;
+    public event Action OnRankingOpenRequested;
+    public event Action<SEType> OnUIActionSoundRequested;
     private void Start()
     {
         if (GameManager.Instance != null)
@@ -99,20 +91,20 @@ public class UIManager : MonoBehaviour
             playerHealth.OnHealthChanged += UpdateHealthUI;
         }
 
+        if (GameManager.Instance != null && GameManager.Instance.Score != null)
+        {
+            GameManager.Instance.Score.OnScoreUpdated += UpdateScoreText;
+        }
         if (rankingPanel != null) rankingPanel.SetActive(false);
         if (guidePanel != null) guidePanel.SetActive(false);
         if (creditsPanel != null) creditsPanel.SetActive(false);
     }
 
-    private void Update()
+    private void UpdateScoreText(float newScore)
     {
-        //プレイ中のみスコアをリアルタイムで更新する
-        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)
+        if (scoreText != null)
         {
-            if (scoreText != null && ScoreManager.Instance != null)
-            {
-                scoreText.text = "SCORE: " + Mathf.FloorToInt(ScoreManager.Instance.CurrentScore).ToString();
-            }
+            scoreText.text = "SCORE: " + Mathf.FloorToInt(newScore).ToString();
         }
     }
 
@@ -127,8 +119,43 @@ public class UIManager : MonoBehaviour
         {
             playerHealth.OnHealthChanged -= UpdateHealthUI;
         }
+
+        if (GameManager.Instance != null && GameManager.Instance.Score != null)
+        {
+            GameManager.Instance.Score.OnScoreUpdated -= UpdateScoreText;
+        }
     }
 
+    public void UpdateRankingDisplay(bool isGameOverSequence, bool isOffline)
+    {
+        if (isGameOverSequence)
+        {
+            UpdateGameOverRankingUI(isOffline);
+        }
+        else
+        {
+            UpdateTitleRankingUI(isOffline);
+        }
+    }
+
+    public void ShowRankingLoading(bool isGameOverSequence)
+    {
+        if (isGameOverSequence)
+        {
+            ShowMessageInRankingUI(gameOverRankingContent, "LOADING...");
+        }
+        else
+        {
+            ShowMessageInRankingUI(titleRankingContent, "LOADING...");
+        }
+    }
+    public void SetResultScoreText(int finalScore)
+    {
+        if (resultScoreText != null)
+        {
+            resultScoreText.text = "SCORE: " + finalScore.ToString();
+        }
+    }
     /// <summary>
     /// GameManagerのステートが変化したとき、該当するパネルの表示非表示を切り替える
     /// </summary>
@@ -157,41 +184,8 @@ public class UIManager : MonoBehaviour
         {
             StartCoroutine(FadeInGameplayUIRoutine(0.5f));
         }
-
-        //ゲームオーバーのスコア表示とランキングの保存、表示
-        if (state == GameState.GameOver)
-        {
-            int finalScore = Mathf.FloorToInt(ScoreManager.Instance.CurrentScore);
-
-            if (resultScoreText != null)
-            {
-                resultScoreText.text = "SCORE: " + finalScore.ToString();
-            }
-            SubmitAndFetchRankingAsync(finalScore);
-        }
     }
 
-    private async void SubmitAndFetchRankingAsync(int finalScore)
-    {
-        if (RankingManager.Instance != null)
-        {
-            ShowMessageInRankingUI(gameOverRankingContent, "LOADING...");
-
-            // 1. スコアを送信して完了を待つ
-            await RankingManager.Instance.AddScoreAndSaveAsync(finalScore);
-
-            // 2. サーバーでの集計ラグのために1秒待つ
-            await Task.Delay(1000);
-            if (this == null || GameManager.Instance.CurrentState != GameState.GameOver) return;
-
-            // 3. 最新のランキングを取得する
-            bool isSuccess = await RankingManager.Instance.FetchRankingAsync();
-            if (this == null || GameManager.Instance.CurrentState != GameState.GameOver) return;
-
-            // 4. ゲームオーバー画面のUIを更新する
-            UpdateGameOverRankingUI(!isSuccess);
-        }
-    }
 
     /// <summary>
     /// 体力が変化したとき、体力のアイコンを切り替える
@@ -234,7 +228,7 @@ public class UIManager : MonoBehaviour
             return;
         }
 
-        var rankData = RankingManager.Instance.CurrentRanking;
+        var rankData = GameManager.Instance.Ranking.CurrentRanking;
 
         if (rankData.Count == 0)
         {
@@ -320,7 +314,7 @@ public class UIManager : MonoBehaviour
         {
 
             //スクロール速度に合わせて移動させる
-            float speed = GameManager.Instance.InitialScrollSpeed;
+            float speed = GameManager.Instance.Level.InitialScrollSpeed;
             float distance = Vector2.Distance(startPosition, targetPosition);
             float playerDuration = distance / speed;
 
@@ -361,9 +355,9 @@ public class UIManager : MonoBehaviour
         if (startPresentationText != null)
         {
             startPresentationText.gameObject.SetActive(true);
-            if (AudioManager.Instance != null)
+            if (GameManager.Instance != null)
             {
-                AudioManager.Instance.PlaySE(SEType.Start);
+                GameManager.Instance.Audio.PlaySE(SEType.Start);
             }
             Color initialColor = startPresentationText.color;
             initialColor.a = 1f;
@@ -474,82 +468,60 @@ public class UIManager : MonoBehaviour
         obj.GetComponent<TextMeshProUGUI>().text = message;
     }
     // --- ボタンメソッド ---
-    private async Task PrepareAndStartSessionAsync()
+    public void OnClickStartButton()
     {
-        if (RankingManager.Instance != null && nameInputField != null)
-        {
-            // アカウントを作り直し、名前を再登録する（これで毎回別人として扱われます）
-            await RankingManager.Instance.ResetPlayerSessionAsync();
-            string playerName = nameInputField.text;
-            await RankingManager.Instance.UpdatePlayerNameAsync(playerName);
-        }
-    }
-    public async void OnClickStartButton()
-    {
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlaySE(SEType.Button);
-        await PrepareAndStartSessionAsync();
-        GameManager.Instance.StartGame();
+        OnUIActionSoundRequested?.Invoke(SEType.Button);
+        string playerName = nameInputField != null ? nameInputField.text : "";
+        OnStartRequested?.Invoke(playerName);
     }
 
     public void OnClickTitleButton()
     {
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlaySE(SEType.Button);
-        GameManager.Instance.GoToTitle();
+        OnUIActionSoundRequested?.Invoke(SEType.Button);
+        OnTitleRequested?.Invoke();
     }
 
-    public async void OnClickRetryButton()
+    public void OnClickRetryButton()
     {
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlaySE(SEType.Button);
-        await PrepareAndStartSessionAsync();
-        GameManager.Instance.RetryGame();
+        OnUIActionSoundRequested?.Invoke(SEType.Button);
+        string playerName = nameInputField != null ? nameInputField.text : "";
+        OnRetryRequested?.Invoke(playerName);
     }
-    public async void OnClickOpenRankingButton()
+
+    public void OnClickOpenRankingButton()
     {
-        if (AudioManager.Instance != null)
-            AudioManager.Instance.PlaySE(SEType.UIOpen);
-        if (RankingManager.Instance != null)
-        {
-            if (rankingPanel != null) rankingPanel.SetActive(true);
-            ShowMessageInRankingUI(titleRankingContent, "LOADING...");
-            await RankingManager.Instance.FetchRankingAsync();
-            UpdateTitleRankingUI();
-        }
+        OnUIActionSoundRequested?.Invoke(SEType.UIOpen);
+        if (rankingPanel != null) rankingPanel.SetActive(true);
+        OnRankingOpenRequested?.Invoke();
     }
 
     public void OnClickCloseRankingButton()
     {
-        if (AudioManager.Instance != null)
-                AudioManager.Instance.PlaySE(SEType.UIClose);
+        OnUIActionSoundRequested?.Invoke(SEType.UIClose);
         if (rankingPanel != null) rankingPanel.SetActive(false);
     }
 
     public void OnClickOpenGuideButton()
     {
-        if (AudioManager.Instance != null)
-                AudioManager.Instance.PlaySE(SEType.UIOpen);
+        OnUIActionSoundRequested?.Invoke(SEType.UIOpen);
         if (guidePanel != null) guidePanel.SetActive(true);
     }
 
     public void OnClickCloseGuideButton()
     {
-        if (AudioManager.Instance != null)
-                AudioManager.Instance.PlaySE(SEType.UIClose);
+        OnUIActionSoundRequested?.Invoke(SEType.UIClose);
         if (guidePanel != null) guidePanel.SetActive(false);
     }
+
     public void OnClickOpenCreditsButton()
     {
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySE(SEType.UIOpen);
-
+        OnUIActionSoundRequested?.Invoke(SEType.UIOpen);
         if (creditsPanel != null) creditsPanel.SetActive(true);
     }
 
     public void OnClickCloseCreditsButton()
     {
-        if (AudioManager.Instance != null) AudioManager.Instance.PlaySE(SEType.UIClose);
-
+        OnUIActionSoundRequested?.Invoke(SEType.UIClose);
         if (creditsPanel != null) creditsPanel.SetActive(false);
     }
 }

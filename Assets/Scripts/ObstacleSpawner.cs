@@ -68,7 +68,7 @@ public class ObstacleSpawner : MonoBehaviour
         if (settings == null) return;
 
         spawnTimer += Time.deltaTime;
-        float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+        float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
         float calculatedInterval = settings.baseObstacleSpawnInterval / (1.0f + difficultyRise * settings.obstacleIntervalWeight);
         float currentInterval = Mathf.Max(calculatedInterval, settings.minObstacleSpawnInterval);
 

@@ -69,9 +69,9 @@ public class PlayerTrail : MonoBehaviour
         // 背景や障害物による「後ろへの押し流し（スクロール）」はPlaying中のみ適用する
         if (currentState == GameState.Playing || currentState == GameState.CharaReady)
         {
-            float difficultyRise = GameManager.Instance.DifficultyMultiplier - 1.0f;
+            float difficultyRise = GameManager.Instance.Level.DifficultyMultiplier - 1.0f;
             float calculatedSpeed = settings.scrollSpeed * (1.0f + difficultyRise * settings.ScrollSpeedWeight);
-            currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed) * GameManager.Instance.GlobalScrollMultiplier;
+            currentSpeed = Mathf.Min(calculatedSpeed, settings.maxScrollSpeed) * GameManager.Instance.Level.GlobalScrollMultiplier;
         }
 
         float moveAmount = currentSpeed * Time.deltaTime;

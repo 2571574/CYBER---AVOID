@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;
     [SerializeField] private TouchInputController inputController;
-
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;     // プレイヤーの足元に配置する空オブジェクト
     [SerializeField] private float groundCheckRadius = 0.1f; // 判定の広さ
@@ -34,6 +34,9 @@ public class PlayerController : MonoBehaviour
     private float airRotationSpeed;
     private bool wasGrounded;
     private float defaultGravity;
+
+    public event Action OnJumped;
+
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -142,7 +145,7 @@ public class PlayerController : MonoBehaviour
             float newVelocityX = Mathf.MoveTowards(currentVelocityX, targetVelocityX, accelRate * Time.fixedDeltaTime);
             rb.velocity = new Vector2(newVelocityX, rb.velocity.y);
 
-            Vector2 screenRange = GameManager.Instance.GetDynamicScreenRange();
+            Vector2 screenRange = CameraAspectController.Instance.GetDynamicScreenRange();
             float clampedX = Mathf.Clamp(rb.position.x, screenRange.x, screenRange.y);
             if (rb.position.x != clampedX)
             {
@@ -154,13 +157,10 @@ public class PlayerController : MonoBehaviour
             {
                 rb.velocity = new Vector2(rb.velocity.x, settings.jumpForce);
 
-                if (AudioManager.Instance != null)
+                if (Time.time - lastJumpSoundTime > soundCooldown)
                 {
-                    if (Time.time - lastJumpSoundTime > soundCooldown)
-                    {
-                        AudioManager.Instance.PlaySE(SEType.Jump);
-                        lastJumpSoundTime = Time.time;
-                    }
+                    OnJumped?.Invoke();
+                    lastJumpSoundTime = Time.time;
                 }
             }
 

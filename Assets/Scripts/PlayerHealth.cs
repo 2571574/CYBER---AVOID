@@ -23,7 +23,8 @@ public class PlayerHealth : MonoBehaviour
     public bool IsInvincible => isInvincible;
 
     public event Action<int> OnHealthChanged;
-    public event Action OnPlayerDead;
+    public event Action<Vector3, float, float> OnDamaged;
+    public event Action<Vector3, float, float> OnPlayerDeadEvent;
 
     // シェーダーのプロパティIDをキャッシュ
     private readonly int damageRatioPropertyId = Shader.PropertyToID("_DamageRatio");
@@ -102,29 +103,15 @@ public class PlayerHealth : MonoBehaviour
         if (CurrentHealth <= 0)
         {
             CurrentHealth = 0;
-            if(EffectManager.Instance != null)
-                EffectManager.Instance.PlayDeathEffect(transform.position);
-            if (CameraShake.Instance != null)
-                CameraShake.Instance.Shake(deathShakeDuration, deathShakeMagnitude);
-            OnPlayerDead?.Invoke();
             gameObject.SetActive(false);
-            GameManager.Instance.HandlePlayerDeath();
+            OnPlayerDeadEvent?.Invoke(transform.position, deathShakeDuration, deathShakeMagnitude);
         }
         else
         {
-            if (AudioManager.Instance != null) 
-            {
-                AudioManager.Instance.PlaySE(SEType.Damage);
-            }
-            if (EffectManager.Instance != null)
-                EffectManager.Instance.PlayDamageEffect(transform.position);
-            if (CameraShake.Instance != null)
-                CameraShake.Instance.Shake(damageShakeDuration, damageShakeMagnitude);
-            // 既存のエフェクトが実行中なら停止して上書き
             if (hitEffectCoroutine != null) StopCoroutine(hitEffectCoroutine);
-
             hitEffectCoroutine = StartCoroutine(HitEffectRoutine());
             StartCoroutine(InvincibilityRoutine());
+            OnDamaged?.Invoke(transform.position, damageShakeDuration, damageShakeMagnitude);
         }
     }
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using UnityEngine;
+using System.Threading.Tasks;
 
 /// <summary>
 /// ゲームの進行ステート
@@ -22,20 +23,22 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+    [Header("Sub Systems (Managers)")]
+    [SerializeField] private UIManager uiManager;
+    [SerializeField] private AudioManager audioManager;
+    [SerializeField] private ScoreManager scoreManager;
+    [SerializeField] private EffectManager effectManager;
+    [SerializeField] private RankingManager rankingManager;
+    [SerializeField] private LevelManager levelManager;
+    public UIManager UI => uiManager;
+    public AudioManager Audio => audioManager;
+    public ScoreManager Score => scoreManager;
+    public EffectManager Effect => effectManager;
+    public RankingManager Ranking => rankingManager;
+    public LevelManager Level => levelManager;
+
     // 現在のゲームステート
     public GameState CurrentState { get; private set; }
-
-    // 時間経過で上昇する時の難易度の倍率
-    public float DifficultyMultiplier { get; private set; } = 1.0f;
-
-    //全体スクロールの倍率(死亡アニメーション時などに使用
-    public float GlobalScrollMultiplier { get; private set; } = 1.0f;
-
-    [Tooltip("ゲーム内のパラメータ")]
-    [SerializeField] private GameStatus settings;
-
-    //現在の基準のスクロール速度を外部に送るプロパティ
-    public float InitialScrollSpeed => settings != null ? settings.scrollSpeed : 8.0f;
 
     [Header("Presentation Settings")]
     [Tooltip("死亡エフェクトの待機秒数")]
@@ -52,9 +55,6 @@ public class GameManager : MonoBehaviour
     /// </summary>
     public event Action<GameState> OnStateChanged;
 
-    //プレイ時間(1ゲーム内)
-    private float playTimer;
-
     //シーン遷移中のロックフラグ
     private bool isTransitioning = false;
 
@@ -68,20 +68,141 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        if (playerTransform != null)
+        {
+            var playerController = playerTransform.GetComponent<PlayerController>();
+            if (playerController != null) playerController.OnJumped += HandlePlayerJump;
+
+            var detectDodge = playerTransform.GetComponentInChildren<DetectDodge>();
+            if (detectDodge != null) detectDodge.OnDodged += HandlePlayerDodge;
+
+            var playerHealth = playerTransform.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                playerHealth.OnDamaged += HandlePlayerDamage;
+                playerHealth.OnPlayerDeadEvent += HandlePlayerDeathTriggered;
+            }
+            var bulletSpawner = FindObjectOfType<BulletSpawner>();
+            if (bulletSpawner != null)
+            {
+                bulletSpawner.OnBulletAlert += HandleBulletAlert;
+            }
+
+            if (uiManager != null)
+            {
+                uiManager.OnStartRequested += HandleStartRequested;
+                uiManager.OnRetryRequested += HandleRetryRequested;
+                uiManager.OnTitleRequested += GoToTitle;
+                uiManager.OnRankingOpenRequested += HandleRankingOpenRequested;
+                uiManager.OnUIActionSoundRequested += HandleUISound;
+            }
+        }
         ChangeState(GameState.Title);
     }
 
-
-    private void Update()
+    private void OnDestroy()
     {
-        if (CurrentState == GameState.Playing)
+        if (playerTransform != null)
         {
-            playTimer += Time.deltaTime;
-            if (settings != null)
+            var playerController = playerTransform.GetComponent<PlayerController>();
+            if (playerController != null) playerController.OnJumped -= HandlePlayerJump;
+
+            var detectDodge = playerTransform.GetComponentInChildren<DetectDodge>();
+            if (detectDodge != null) detectDodge.OnDodged -= HandlePlayerDodge;
+
+            var playerHealth = playerTransform.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
             {
-                //IncreaseIntervalごとにIncreaseRate分だけ難易度倍率を上げる
-                DifficultyMultiplier = 1.0f + Mathf.Max(0f, (playTimer / settings.difficultyIncreaseInterval) * settings.difficultyIncreaseRate);
+                playerHealth.OnDamaged -= HandlePlayerDamage;
+                playerHealth.OnPlayerDeadEvent -= HandlePlayerDeathTriggered;
             }
+        }
+
+        var bulletSpawner = FindObjectOfType<BulletSpawner>();
+        if (bulletSpawner != null)
+        {
+            bulletSpawner.OnBulletAlert -= HandleBulletAlert;
+        }
+
+        if (uiManager != null)
+        {
+            uiManager.OnStartRequested -= HandleStartRequested;
+            uiManager.OnRetryRequested -= HandleRetryRequested;
+            uiManager.OnTitleRequested -= GoToTitle;
+            uiManager.OnRankingOpenRequested -= HandleRankingOpenRequested;
+            uiManager.OnUIActionSoundRequested -= HandleUISound;
+        }
+    }
+
+    private void HandlePlayerJump()
+    {
+        if (audioManager != null) audioManager.PlaySE(SEType.Jump);
+    }
+
+    private void HandlePlayerDodge(Vector3 position)
+    {
+        int bonusValue = 0;
+        if (scoreManager != null) bonusValue = scoreManager.AddDodgeBonus();
+        if (audioManager != null) audioManager.PlaySE(SEType.Dodge);
+        if (uiManager != null && bonusValue > 0)
+        {
+            uiManager.ShowBonusText(bonusValue);
+        }
+        if (effectManager != null) effectManager.PlayScoreEffect(position);
+    }
+
+    private void HandlePlayerDamage(Vector3 position, float shakeDuration, float shakeMagnitude)
+    {
+        if (audioManager != null) audioManager.PlaySE(SEType.Damage);
+        if (effectManager != null) effectManager.PlayDamageEffect(position);
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(shakeDuration, shakeMagnitude);
+    }
+
+    private void HandlePlayerDeathTriggered(Vector3 position, float shakeDuration, float shakeMagnitude)
+    {
+        if (audioManager != null) audioManager.PlaySE(SEType.Death);
+        if (effectManager != null) effectManager.PlayDeathEffect(position);
+        if (CameraShake.Instance != null) CameraShake.Instance.Shake(shakeDuration, shakeMagnitude);
+        StartCoroutine(PlayerDeathSequence());
+    }
+    private void HandleBulletAlert()
+    {
+        if (audioManager != null) audioManager.PlaySE(SEType.Alert);
+    }
+
+    private void HandleUISound(SEType seType)
+    {
+        if (audioManager != null) audioManager.PlaySE(seType);
+    }
+
+    private async void HandleStartRequested(string playerName)
+    {
+        await PreparePlayerSessionAsync(playerName);
+        StartGame();
+    }
+
+    private async void HandleRetryRequested(string playerName)
+    {
+        await PreparePlayerSessionAsync(playerName);
+        RetryGame();
+    }
+
+    private async Task PreparePlayerSessionAsync(string playerName)
+    {
+        if (rankingManager != null)
+        {
+            await rankingManager.ResetPlayerSessionAsync();
+            await rankingManager.UpdatePlayerNameAsync(playerName);
+        }
+    }
+
+    private async void HandleRankingOpenRequested()
+    {
+        if (rankingManager != null && uiManager != null)
+        {
+            uiManager.ShowRankingLoading(false);
+            bool isSuccess = await rankingManager.FetchRankingAsync();
+            uiManager.UpdateRankingDisplay(false, !isSuccess);
         }
     }
 
@@ -94,39 +215,42 @@ public class GameManager : MonoBehaviour
         CurrentState = newState;
         if (newState == GameState.Title)
         {
-            playTimer = 0f;
-            DifficultyMultiplier = 1.0f;
-            
-            if(AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayBGM(BGMType.Title);
-            }
+            if (audioManager != null) audioManager.PlayBGM(BGMType.Title);
         }
-        else if(newState == GameState.StartAnim)
+        else if (newState == GameState.StartAnim)
         {
-            if(AudioManager.Instance != null)
-            {
-                AudioManager.Instance.PlayBGM(BGMType.Play);
-            }
+            if (audioManager != null) audioManager.PlayBGM(BGMType.Play);
         }
-        else if(newState == GameState.PlayerDead)
+        else if (newState == GameState.PlayerDead)
         {
-            if(AudioManager.Instance != null)
-            {
-                AudioManager.Instance.StopBGM();
-            }
+            if (audioManager != null) audioManager.StopBGM();
         }
-            OnStateChanged?.Invoke(newState);
+        else if (newState == GameState.GameOver)
+        {
+            ProcessGameOverRankingAsync();
+        }
+
+        OnStateChanged?.Invoke(newState);
     }
 
-    /// <summary>
-    /// ゲームの難易度と経過時間を初期状態に戻す
-    /// </summary>
-    private void ResetStatus()
+    private async void ProcessGameOverRankingAsync()
     {
-        playTimer = 0f;
-        DifficultyMultiplier = 1.0f;
-        GlobalScrollMultiplier = 1.0f;
+        if (scoreManager == null || rankingManager == null || uiManager == null) return;
+
+        int finalScore = Mathf.FloorToInt(scoreManager.CurrentScore);
+        uiManager.SetResultScoreText(finalScore);
+        uiManager.ShowRankingLoading(true);
+
+        await rankingManager.AddScoreAndSaveAsync(finalScore);
+        await Task.Delay(1000);
+
+        if (this == null || CurrentState != GameState.GameOver) return;
+
+        bool isSuccess = await rankingManager.FetchRankingAsync();
+
+        if (this == null || CurrentState != GameState.GameOver) return;
+
+        uiManager.UpdateRankingDisplay(true, !isSuccess);
     }
 
     /// <summary>
@@ -142,20 +266,6 @@ public class GameManager : MonoBehaviour
                 p.ReleaseToPool();
             }
         }
-    }
-
-    /// <summary>
-    /// 現在のカメラのアスペクト比から左右の端の座標を計算する
-    /// </summary>
-    /// <returns></returns>
-    public Vector2 GetDynamicScreenRange()
-    {
-        if (Camera.main != null)
-        {
-            float halfWidth = Camera.main.orthographicSize * Camera.main.aspect;
-            return new Vector2(-halfWidth + 0.15f, halfWidth - 0.15f);
-        }
-        return new Vector2(-2.8f, 2.8f);
     }
 
     // シーン遷移を外部から呼ぶための関数
@@ -181,11 +291,6 @@ public class GameManager : MonoBehaviour
         StartCoroutine(GoToTitleSequence());
     }
 
-    public void HandlePlayerDeath()
-    {
-        if (CurrentState != GameState.Playing) return;
-        StartCoroutine(PlayerDeathSequence());
-    }
 
     // コルーチンによるシーケンス処理
 
@@ -193,10 +298,10 @@ public class GameManager : MonoBehaviour
     {
         isTransitioning = true;
 
-        yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(0.5f));
+        yield return StartCoroutine(GameManager.Instance.UI.FadeOutRoutine(0.5f));
 
         ChangeState(GameState.StartAnim);
-        ResetStatus();
+        if (levelManager != null) levelManager.ResetStatus();
         ClearField();
 
         if (playerTransform != null)
@@ -205,14 +310,14 @@ public class GameManager : MonoBehaviour
             playerTransform.gameObject.SetActive(true);
         }
 
-        yield return StartCoroutine(UIManager.Instance.FadeInRoutine(0.5f));
+        yield return StartCoroutine(GameManager.Instance.UI.FadeInRoutine(0.5f));
 
-        yield return StartCoroutine(UIManager.Instance.ReadyPresentationRoutine(playerTransform, playerReadyPosition));
+        yield return StartCoroutine(GameManager.Instance.UI.ReadyPresentationRoutine(playerTransform, playerReadyPosition));
 
         
         ChangeState(GameState.CharaReady);
 
-        yield return StartCoroutine(UIManager.Instance.WaitTextExitRoutine());
+        yield return StartCoroutine(GameManager.Instance.UI.WaitTextExitRoutine());
 
         ChangeState(GameState.Playing);
 
@@ -222,30 +327,29 @@ public class GameManager : MonoBehaviour
     private IEnumerator PlayerDeathSequence()
     {
         isTransitioning = true;
-
         ChangeState(GameState.PlayerDead);
 
-        if (AudioManager.Instance != null)
-        {
-            AudioManager.Instance.PlaySE(SEType.Death);
-        }
-
         float elapsed = 0f;
-        while(elapsed < deathWaitTime)
+        while (elapsed < deathWaitTime)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.Clamp01(elapsed / deathWaitTime);
-
             float easeOutT = 1f - Mathf.Pow(1f - t, 3f);
-            GlobalScrollMultiplier = Mathf.Lerp(1.0f,0.0f,easeOutT);
+
+            // 修正: スクロール倍率の変更をLevelManagerに依頼
+            if (levelManager != null)
+                levelManager.SetGlobalScrollMultiplier(Mathf.Lerp(1.0f, 0.0f, easeOutT));
+
             yield return null;
         }
-        GlobalScrollMultiplier = 0.0f;
 
-        yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(1.0f));
+        if (levelManager != null)
+            levelManager.SetGlobalScrollMultiplier(0.0f);
+
+        yield return StartCoroutine(GameManager.Instance.UI.FadeOutRoutine(1.0f));
 
         ChangeState(GameState.GameOver);
-        yield return StartCoroutine(UIManager.Instance.FadeInRoutine(0.5f));
+        yield return StartCoroutine(GameManager.Instance.UI.FadeInRoutine(0.5f));
 
         isTransitioning = false;
     }
@@ -254,13 +358,13 @@ public class GameManager : MonoBehaviour
     {
         isTransitioning = true;
 
-        yield return StartCoroutine(UIManager.Instance.FadeOutRoutine(0.5f));
+        yield return StartCoroutine(GameManager.Instance.UI.FadeOutRoutine(0.5f));
 
-        ResetStatus();
+        if (levelManager != null) levelManager.ResetStatus();
         ClearField();
         ChangeState(GameState.Title);
 
-        yield return StartCoroutine(UIManager.Instance.FadeInRoutine(0.5f));
+        yield return StartCoroutine(GameManager.Instance.UI.FadeInRoutine(0.5f));
 
         isTransitioning = false;
     }
