@@ -5,6 +5,8 @@ using UnityEngine;
 /// ゲーム全体の音を管理するクラス
 /// </summary>
 /// 
+
+//BGMとSEの種類を定義するEnum
 public enum BGMType
 {
     Title,

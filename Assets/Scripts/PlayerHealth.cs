@@ -9,16 +9,28 @@ public class PlayerHealth : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
 
     [Header("HitEffect Settings")]
+    [Tooltip("被弾時のフラッシュ色")]
     [SerializeField] private Color burstFlashColor = Color.red;
+    [Tooltip("被弾時のフラッシュの強さ")]
     [SerializeField] private float burstMultiplier = 15.0f;
 
     [Header("Camera Shake Settings")]
+    [Tooltip("被弾時の画面揺れの時間")]
     [SerializeField] private float damageShakeDuration = 0.15f;
+    [Tooltip("被弾時の画面揺れの強さ")]
     [SerializeField] private float damageShakeMagnitude = 0.1f;
+    [Tooltip("死亡時の画面揺れの時間")]
     [SerializeField] private float deathShakeDuration = 0.4f;
+    [Tooltip("死亡時の画面揺れの強さ")]
     [SerializeField] private float deathShakeMagnitude = 0.25f;
 
+    //現在の体力
     public int CurrentHealth { get; private set; }
+
+    //シェーダーの縁の元の色を保存する変数
+    private Color originalEdgeColor;
+
+    //無敵状態
     private bool isInvincible = false;
     public bool IsInvincible => isInvincible;
 
@@ -31,7 +43,6 @@ public class PlayerHealth : MonoBehaviour
     private readonly int glitchIntensityPropertyId = Shader.PropertyToID("_GlitchIntensify");
     private readonly int edgeColorPropertyId = Shader.PropertyToID("_EdgeColor");
 
-    private Color originalEdgeColor;
     private Coroutine hitEffectCoroutine;
 
     private void Start()
@@ -54,6 +65,7 @@ public class PlayerHealth : MonoBehaviour
 
     private void HandleStateChanged(GameState state)
     {
+        // タイトル、スタートアニメーション、プレイ中の状態になったらHPをリセットして表示する
         if (state == GameState.Title || state == GameState.StartAnim || state == GameState.Playing)
         {
             if (settings != null) CurrentHealth = settings.maxHealth;
@@ -77,6 +89,10 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 障害物や弾に衝突したときの処理
+    /// </summary>
+    /// <param name="collision">衝突したコライダ</param>
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
@@ -87,6 +103,7 @@ public class PlayerHealth : MonoBehaviour
             TakeDamage();
             if (collision.CompareTag("Bullet"))
             {
+                //被弾時弾をプールに戻す
                 var poolable = collision.GetComponent<PoolableObject>();
                 if (poolable != null) poolable.ReleaseToPool();
             }
@@ -121,6 +138,9 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在のHPに応じてシェーダーのダメージ比率を更新する
+    /// </summary>
     private void UpdateShaderDamageRatio()
     {
         if (spriteRenderer != null && spriteRenderer.material != null && settings != null)
@@ -130,6 +150,10 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ノイズ表現の強さを設定する。
+    /// </summary>
+    /// <param name="intensity">ノイズの強さ</param>
     private void SetGlitchIntensity(float intensity)
     {
         if (spriteRenderer != null && spriteRenderer.material != null)
@@ -139,6 +163,9 @@ public class PlayerHealth : MonoBehaviour
     }
 
 
+    /// <summary>
+    /// 被弾エフェクトのコルーチン
+    /// </summary>
     private IEnumerator HitEffectRoutine()
     {
         float duration = 0.3f;
@@ -183,6 +210,9 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 無敵時間のコルーチン
+    /// </summary>
     private IEnumerator InvincibilityRoutine()
     {
         isInvincible = true;

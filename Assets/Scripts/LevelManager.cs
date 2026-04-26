@@ -7,12 +7,21 @@ public class LevelManager : MonoBehaviour
 
     [SerializeField] private GameStatus settings;
 
+    //難易度の倍率
     public float DifficultyMultiplier { get; private set; } = 1.0f;
+
+    //全体のスクロール速度にかける倍率
     public float GlobalScrollMultiplier { get; private set; } = 1.0f;
+
+    //初期のスクロール速度
     public float InitialScrollSpeed => settings != null ? settings.scrollSpeed : 8.0f;
 
+    //プレイ開始からの経過時間
     private float playTimer;
 
+    /// <summary>
+    /// プレイ中の経過時間に応じて難易度を上げる
+    /// </summary>
     private void Update()
     {
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)

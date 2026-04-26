@@ -6,7 +6,9 @@ public class PlayerTrail : MonoBehaviour
 {
     [SerializeField] private GameStatus settings;
     [Header("Trail Settings")]
+    [Tooltip("トレイルの持続時間")]
     [SerializeField] private float trailTime = 0.5f;
+    [Tooltip("トレイルの色")]
     [SerializeField] private Gradient trailGradient;
 
 
@@ -48,6 +50,9 @@ public class PlayerTrail : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// トレイルを消去する
+    /// </summary>
     private void TrailClear()
     {
         points.Clear();

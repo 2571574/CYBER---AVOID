@@ -12,12 +12,14 @@ public class BulletSpawner : MonoBehaviour
     [SerializeField] private GameObject bulletPrefab;
     [Tooltip("予告線用のプレハブ")]
     [SerializeField] private GameObject PredirectLinePrefab;
+    [Tooltip("プレイヤーのTransform")]
     [SerializeField] private Transform playerTransform;
+    [Tooltip("プレイヤーのRigidbody2D")]
     [SerializeField] private Rigidbody2D playerRb;
     [Header("Spawn Settings")]
     [SerializeField] private Transform bulletSpawnArea;
 
-    private float bulletTimer;
+    private float bulletTimer;  //弾の生成タイマー
 
     public event Action OnBulletAlert;
 
@@ -103,8 +105,7 @@ public class BulletSpawner : MonoBehaviour
     /// <summary>
     /// 横苦戦を表示し、一定時間後に弾を落下させるコルーチン
     /// </summary>
-    /// <param name="isPredictive"></param>
-    /// <returns></returns>
+    /// <param name="isPredictive">予測の弾かどうか</param>
     private IEnumerator SpawnBulletRoutine(bool isPredictive)
     {
         //難易度による落下速度の計算

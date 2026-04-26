@@ -5,11 +5,11 @@ public class EffectManager : MonoBehaviour
 {
 
     [Header("Effect Prefabs")]
-    [Tooltip("被弾時に再生するパーティクルプレハブを紐付けてください")]
+    [Tooltip("被弾時に再生するパーティクルプレハブ")]
     [SerializeField] private GameObject damageEffectPrefab;
-    [Tooltip("死亡時に再生するパーティクルプレハブを紐付けてください")]
+    [Tooltip("死亡時に再生するパーティクルプレハブ")]
     [SerializeField] private GameObject deathEffectPrefab;
-    [Tooltip("ボーナス獲得時に再生するパーティクルプレハブを紐付けてください")]
+    [Tooltip("ボーナス獲得時に再生するパーティクルプレハブ")]
     [SerializeField] private GameObject scoreEffectPrefab;
 
     private ObjectPool<GameObject> damagePool;
@@ -22,6 +22,11 @@ public class EffectManager : MonoBehaviour
         scorePool = CreatePool(scoreEffectPrefab);
     }
 
+    /// <summary>
+    /// プレハブのオブジェクトプールを作成
+    /// </summary>
+    /// <param name="prefab">対象のプレハブ</param>
+    /// <returns>初期化されたObjectPool</returns>
     private ObjectPool<GameObject> CreatePool(GameObject prefab)
     {
         return new ObjectPool<GameObject>(
@@ -39,6 +44,11 @@ public class EffectManager : MonoBehaviour
         );
     }
 
+    /// <summary>
+    /// エフェクトを再生する
+    /// </summary>
+    /// <param name="pool">再生したいオブジェクトのプール</param>
+    /// <param name="position">再生位置</param>
     public void PlayEffect(ObjectPool<GameObject> pool, Vector3 position)
     {
         if (pool == null) return;

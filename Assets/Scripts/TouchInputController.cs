@@ -44,7 +44,7 @@ public class TouchInputController : MonoBehaviour, IPointerDownHandler, IDragHan
 
     private void ProcessInput(PointerEventData eventData)
     {
-        // タップされたスクリーン座標を、このUIパネル内のローカル座標に変換する（カメラ設定やCanvasサイズに依存しない）
+        // タップされたスクリーン座標を、このUIパネル内のローカル座標に変換
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
             rectTransform,
             eventData.position,
@@ -53,11 +53,11 @@ public class TouchInputController : MonoBehaviour, IPointerDownHandler, IDragHan
         {
             Rect rect = rectTransform.rect;
 
-            // XとYを、パネルの左下を 0.0、右上を 1.0 とした「割合（正規化座標）」に変換
+            // XとYを、パネルの左下を 0.0、右上を 1.0 とした割合に変換
             float normalizedX = (localPoint.x - rect.x) / rect.width;
             float normalizedY = (localPoint.y - rect.y) / rect.height;
 
-            // X軸の判定（0.0 〜 1.0）
+            // X軸の判定
             if (normalizedX < leftMoveAreaRatio)
             {
                 HorizontalInput = -1f;
@@ -71,7 +71,7 @@ public class TouchInputController : MonoBehaviour, IPointerDownHandler, IDragHan
                 HorizontalInput = 0f; // 中央エリア
             }
 
-            // Y軸の判定：下端が0.0、上端が1.0なので、上部判定は (1.0 - jumpAreaRatioInPanel) より上
+            // Y軸の判定
             IsJumpHeld = normalizedY > (1.0f - jumpAreaRatioInPanel);
         }
     }

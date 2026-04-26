@@ -19,9 +19,16 @@ public class PredictLineEffect : MonoBehaviour
     [Tooltip("発射直前の最大の太さ")]
     [SerializeField] private float maxWidth = 0.15f;
 
+    //チャージの基本時間
     private float chargeDuration = 1f;
+
+    //現在のチャージ時間を管理する変数
     private float currentTimer = 0f;
+
+    //チャージ中かどうかを管理するフラグ
     private bool isCharging = false;
+
+    //チャージ中に音を鳴らした回数を管理する変数
     private int playedAlert = 0;
 
     public event Action OnAlertTriggered;
@@ -39,7 +46,7 @@ public class PredictLineEffect : MonoBehaviour
         currentTimer = 0f;
         isCharging = true;
         playedAlert = 0;
-        UpdateLine(0f); // 完全に透明・極細の初期状態からスタート
+        UpdateLine(0f); 
     }
 
     private void Update()
@@ -48,11 +55,10 @@ public class PredictLineEffect : MonoBehaviour
 
         currentTimer += Time.deltaTime;
 
-        // 0.0（開始） 〜 1.0（発射完了）までの進捗度合い
+        //発射完了までの進捗度合い
         float progress = Mathf.Clamp01(currentTimer / chargeDuration);
 
-        // 演出をリッチにするためのイージング（緩急）
-        // そのままprogressを使うと一定速度で変化するが、2乗することで発射直前に急激に危険度が増す表現になる
+        // 演出をリッチにするためのイージング
         float easeProgress = progress * progress;
 
         UpdateLine(easeProgress);

@@ -10,6 +10,7 @@ public class ObstacleSpawner : MonoBehaviour
     [SerializeField] private Transform groundSpawnPoint;
     [SerializeField] private Transform airSpawnPoint;
 
+    //障害物のスポーンタイマー
     private float spawnTimer;
 
     private ObjectPool<GameObject> groundPool;
@@ -21,6 +22,11 @@ public class ObstacleSpawner : MonoBehaviour
         airPool = CreatePool(airPrefab);
     }
 
+    /// <summary>
+    /// プレハブのプールを作成する
+    /// </summary>
+    /// <param name="prefab">プール化するプレハブ</param>
+    /// <returns>作成されたオブジェクトプール</returns>
     private ObjectPool<GameObject> CreatePool(GameObject prefab)
     {
         return new ObjectPool<GameObject>(
@@ -79,6 +85,9 @@ public class ObstacleSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ランダムな方の障害物をスポーンさせる
+    /// </summary>
     void SpawnRandomObstacle()
     {
         bool isSpike = Random.value > 0.5f;

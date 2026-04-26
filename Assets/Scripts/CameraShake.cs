@@ -5,7 +5,9 @@ public class CameraShake : MonoBehaviour
 {
     public static CameraShake Instance { get; private set; }
 
+    //基準となる位置
     private Vector3 originalPosition;
+
     private Coroutine shakeCoroutine;
 
     private void Awake()
@@ -17,13 +19,22 @@ public class CameraShake : MonoBehaviour
         originalPosition = transform.position;
     }
 
-    // 外部からこの関数を呼ぶだけで画面が揺れます
+    /// <summary>
+    /// カメラを揺らす
+    /// </summary>
+    /// <param name="duration">持続時間</param>
+    /// <param name="magnitude">強さ</param>
     public void Shake(float duration, float magnitude)
     {
         if (shakeCoroutine != null) StopCoroutine(shakeCoroutine);
         shakeCoroutine = StartCoroutine(ShakeRoutine(duration, magnitude));
     }
 
+    /// <summary>
+    /// カメラを揺らすコルーチン
+    /// </summary>
+    /// <param name="duration">持続時間</param>
+    /// <param name="magnitude">強さ</param>
     private IEnumerator ShakeRoutine(float duration, float magnitude)
     {
         float elapsed = 0.0f;

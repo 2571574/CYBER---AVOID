@@ -3,6 +3,9 @@ using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
 
+/// <summary>
+/// カメラのアスペクト比を制御するクラス
+/// </summary>
 public class CameraAspectController : MonoBehaviour
 {
     public static CameraAspectController Instance { get; private set; }
@@ -11,6 +14,7 @@ public class CameraAspectController : MonoBehaviour
 
     private Camera cam;
 
+    //以前の画面サイズを記憶する変数
     private int lastScreenWidth;
     private int lastScreenHeight;
 
@@ -45,6 +49,9 @@ public class CameraAspectController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在の画面サイズとターゲットのアスペクト比からカメラを調整する
+    /// </summary>
     void UpdateCameraRect()
     {
         if (cam == null) return;
@@ -75,6 +82,10 @@ public class CameraAspectController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在のカメラの描画範囲に基づき、ワールド座標での左右の範囲を取得
+    /// </summary>
+    /// <returns></returns>
     public Vector2 GetDynamicScreenRange()
     {
         if (cam != null)

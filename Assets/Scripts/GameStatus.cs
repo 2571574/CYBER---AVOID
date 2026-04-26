@@ -1,6 +1,10 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewGameStatus", menuName = "CyberAvoid/GameStatus")]
+
+/// <summary>
+/// ゲーム全体の設定を管理する
+/// </summary>
 public class GameStatus : ScriptableObject
 {
     [Header("Player Settings")]
@@ -21,7 +25,6 @@ public class GameStatus : ScriptableObject
     [Tooltip("空中での摩擦/減速度")]
     public float airDeceleration = 5.0f;
 
-
     [Header("Enemy / Bullet Settings")]
     [Tooltip("スクロール速度")]
     public float scrollSpeed = 8.0f;
@@ -29,8 +32,6 @@ public class GameStatus : ScriptableObject
     public float baseBulletFallSpeed = 15.0f;
     [Tooltip("障害物の生成間隔（秒）")]
     public float maxObstacleSpawnInterval = 3.0f;
-
-    [Header("Input Settings")]
 
     [Header("World Settings")]
     [Tooltip("難易度上昇倍率")]

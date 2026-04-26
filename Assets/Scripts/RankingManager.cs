@@ -29,6 +29,9 @@ public class RankingManager : MonoBehaviour
         await InitializeUGSAsync();
     }
 
+    /// <summary>
+    /// 初期化処理と匿名ログインを行う
+    /// </summary>
     private async Task InitializeUGSAsync()
     {
         try
@@ -55,6 +58,9 @@ public class RankingManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 現在のセッションをリセットして匿名ログインし直す
+    /// </summary>
     public async Task ResetPlayerSessionAsync()
     {
         if (UnityServices.State != ServicesInitializationState.Initialized) return;
@@ -72,7 +78,10 @@ public class RankingManager : MonoBehaviour
         catch (System.Exception e) { Debug.LogError("リセットエラー: " + e); }
     }
 
-    // プレイヤー名をサーバーに登録・更新する
+    /// <summary>
+    /// プレイヤーの名前をサーバーに保存する
+    /// </summary>
+    /// <param name="playerName">登録するプレイヤー名</param>
     public async Task UpdatePlayerNameAsync(string playerName)
     {
         if (UnityServices.State != ServicesInitializationState.Initialized) return;
@@ -90,7 +99,10 @@ public class RankingManager : MonoBehaviour
         }
     }
 
-    // スコアを送信する（UIManagerのGameOver処理から呼ばれる）
+    /// <summary>
+    /// スコアを送信する
+    /// </summary>
+    /// <param name="score">送信するスコア</param>
     public async Task AddScoreAndSaveAsync(int score)
     {
         if (!IsPlayerNameSet)
@@ -110,7 +122,9 @@ public class RankingManager : MonoBehaviour
         }
     }
 
-    // サーバーからランキングを取得する
+    /// <summary>
+    /// サーバーからデータを取得してランキングを更新する
+    /// </summary>
     public async Task<bool> FetchRankingAsync()
     {
         try

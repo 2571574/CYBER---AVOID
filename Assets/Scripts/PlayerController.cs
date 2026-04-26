@@ -24,15 +24,24 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ParticleSystem groundSpark;
     [Tooltip("着地時のパーティクルシステム")]
     [SerializeField] private ParticleSystem groundImpact;
-
-    private float soundCooldown = 0.05f;
-    private float lastJumpSoundTime = 0f;
     private Rigidbody2D rb;
-    private bool isGrounded;
     private Vector2 startPosition;
 
-    private float airRotationSpeed;
+    // ジャンプ音の再生間隔の制限
+    private float soundCooldown = 0.05f;
+
+    // 最後にジャンプ音を再生した時間
+    private float lastJumpSoundTime = 0f;
+
+    // 接地状態の管理
+    private bool isGrounded;
     private bool wasGrounded;
+
+    //空中の回転速度
+    private float airRotationSpeed;
+
+
+    //基本の重力
     private float defaultGravity;
 
     public event Action OnJumped;
@@ -192,7 +201,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // 開発時にUnityエディタ上で判定範囲を視覚化するための機能
+    //判定範囲を視覚化
     private void OnDrawGizmosSelected()
     {
         if (groundCheck != null)

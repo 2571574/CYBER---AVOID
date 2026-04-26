@@ -6,8 +6,9 @@ public class ScoreManager : MonoBehaviour
 
     [SerializeField] private GameStatus settings;
 
-    // 現在のスコア（内部的には正確な計算のためにfloatを使用し、表示時にintにします）
+    //現在のスコア
     public float CurrentScore { get; private set; }
+
     public event Action<float> OnScoreUpdated;
 
     private void OnEnable()
@@ -46,7 +47,9 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    // ギリギリで回避した時などに外部から呼び出すメソッド（後で弾の処理に組み込みます）
+    /// <summary>
+    /// 回避成功時のスコア加算
+    /// </summary>
     public int AddDodgeBonus()
     {
         if (settings != null && GameManager.Instance.CurrentState == GameState.Playing)

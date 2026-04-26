@@ -68,6 +68,8 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+
+        //各イベントの登録
         if (playerTransform != null)
         {
             var playerController = playerTransform.GetComponent<PlayerController>();
@@ -102,6 +104,7 @@ public class GameManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        //各イベントの登録解除
         if (playerTransform != null)
         {
             var playerController = playerTransform.GetComponent<PlayerController>();
@@ -239,6 +242,9 @@ public class GameManager : MonoBehaviour
         OnStateChanged?.Invoke(newState);
     }
 
+    /// <summary>
+    /// ゲームオーバー時のランキング処理
+    /// </summary>
     private async void ProcessGameOverRankingAsync()
     {
         if (scoreManager == null || rankingManager == null || uiManager == null) return;
@@ -342,7 +348,7 @@ public class GameManager : MonoBehaviour
             float t = Mathf.Clamp01(elapsed / deathWaitTime);
             float easeOutT = 1f - Mathf.Pow(1f - t, 3f);
 
-            // 修正: スクロール倍率の変更をLevelManagerに依頼
+            //スクロール倍率の変更をLevelManagerに依頼
             if (levelManager != null)
                 levelManager.SetGlobalScrollMultiplier(Mathf.Lerp(1.0f, 0.0f, easeOutT));
 

@@ -6,7 +6,6 @@ using UnityEngine;
 public class DetectDodge : MonoBehaviour
 {
     private PlayerHealth playerHealth;
-
     public event Action<Vector3> OnDodged;
 
     private void Start()
