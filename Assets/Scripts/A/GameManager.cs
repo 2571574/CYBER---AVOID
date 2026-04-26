@@ -196,12 +196,18 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// ランキングの読み込み処理
+    /// </summary>
     private async void HandleRankingOpenRequested()
     {
         if (rankingManager != null && uiManager != null)
         {
+            //ローディング表示
             uiManager.ShowRankingLoading(false);
+            //ランキングの取得
             bool isSuccess = await rankingManager.FetchRankingAsync();
+
             uiManager.UpdateRankingDisplay(false, !isSuccess);
         }
     }
