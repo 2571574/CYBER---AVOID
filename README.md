@@ -3,7 +3,7 @@
 ## 実行方法(Windowsの場合)
 1.[Releases]ページより、'CYBER-AVOID_Win.zip'をダウンロードします。
 
-https://github.com/2571574/MyFPSProject/releases/tag/v1.0.0
+https://github.com/2571574/CYBER---AVOID/releases/tag/v1.0.0
 
 2.ZIPファイルを展開(解凍)します。
 
@@ -12,7 +12,7 @@ https://github.com/2571574/MyFPSProject/releases/tag/v1.0.0
 ## 実行方法(Androidの場合)
 1.[Releases]ページより、'CYBER-AVOID.apkをダウンロードします。
 
-https://github.com/2571574/MyFPSProject/releases/tag/v1.0.0
+https://github.com/2571574/CYBER---AVOID/releases/tag/v1.0.0
 
 2.'CYBER-AVOID.apk'を実行し、インストールしてください。
 
