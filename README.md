@@ -10,7 +10,7 @@ https://github.com/2571574/CYBER---AVOID/releases/tag/v1.0.0
 3.展開されたフォルダ内にある、'CYBER-AVOID.exe'を実行してください。
 
 ## 実行方法(Androidの場合)
-1.[Releases]ページより、'CYBER-AVOID.apkをダウンロードします。
+1.[Releases]ページより、'CYBER-AVOID.apk'をダウンロードします。
 
 https://github.com/2571574/CYBER---AVOID/releases/tag/v1.0.0
 
