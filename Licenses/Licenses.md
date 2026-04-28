@@ -8,6 +8,12 @@
 
 ### Unity
 
+Copyright(c) Unity Technologies.
+
+
+
+
+
 
 
 ## フォント
@@ -24,7 +30,7 @@
 
 ライセンス: SIL Open Font License 1.1
 
-(OFL\_ZenKakuGothicNew 参照)
+(OFL\_ZenKakuGothicNew.txt 参照)
 
 
 
@@ -75,8 +81,4 @@ https://soundeffect-lab.info/
 #### Kenney
 
 https://www.kenney.nl/
-
-
-
-
 
