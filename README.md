@@ -18,9 +18,11 @@
 【対象OS】Android(Windows 11)
 
 【動作確認スペック】
+
 Android : Samsung Galaxy Z Fold 6
 
 PC
+
 ・OS：Windows 11 Home 25H2
 
 ・CPU：Intel Core i7-12700
